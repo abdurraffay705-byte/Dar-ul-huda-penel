@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { database } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign, Mail, Home } from 'lucide-react';
+import { database, supabase } from '../supabaseClient';
+import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign } from 'lucide-react';
 
 export default function TeachersModule({ userRole }) {
   const [teachers, setTeachers] = useState([]);
@@ -16,7 +16,7 @@ export default function TeachersModule({ userRole }) {
     full_name: '',
     phone: '',
     email: '',
-    address: '',
+    password: '',
     subject: 'Hifz Instruction',
     qualification: '',
     salary: '',
@@ -47,7 +47,7 @@ export default function TeachersModule({ userRole }) {
     full_name: '',
     phone: '',
     email: '',
-    address: '',
+    password: '',
     subject: 'Hifz Instruction',
     qualification: '',
     salary: '',
@@ -61,8 +61,8 @@ export default function TeachersModule({ userRole }) {
     setFormData({
       full_name: teacher.full_name,
       phone: teacher.phone || '',
-      email: teacher.email || '',
-      address: teacher.address || '',
+      email: '',
+      password: '',
       subject: teacher.subject,
       qualification: teacher.qualification || '',
       salary: teacher.salary,
@@ -85,10 +85,11 @@ export default function TeachersModule({ userRole }) {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-      const cleanData = {
-        ...formData,
-        salary: Number(formData.salary)
-      };
+
+    const cleanData = {
+      ...formData,
+      salary: Number(formData.salary)
+    };
 
     if (editingTeacher) {
       const res = await database.teachers.update(editingTeacher.id, {
@@ -101,14 +102,43 @@ export default function TeachersModule({ userRole }) {
       } else {
         alert("Update failed: " + res.error);
       }
-    } else {
-      const res = await database.teachers.create(cleanData);
+      return;
+    }
+
+    try {
+      const { email, password, ...teacherPayload } = cleanData;
+
+      if (!email || !password) {
+        alert('Email and password are required to create a teacher account.');
+        return;
+      }
+
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { role: 'teacher' }
+        }
+      });
+
+      if (signUpError) {
+        throw signUpError;
+      }
+
+      const authUserId = authData?.user?.id;
+      const res = await database.teachers.create({
+        ...teacherPayload,
+        ...(authUserId ? { user_id: authUserId } : {})
+      });
+
       if (res.success) {
         setIsFormOpen(false);
         loadTeachers();
       } else {
         alert("Creation failed: " + res.error);
       }
+    } catch (err) {
+      alert("Creation failed: " + (err?.message || err));
     }
   };
 
@@ -199,16 +229,6 @@ export default function TeachersModule({ userRole }) {
                   <span style={styles.infoLabel}>Phone:</span>
                   <span style={styles.infoVal}>{teacher.phone || '-'}</span>
                 </div>
-                <div style={styles.infoRow}>
-                  <Mail size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Email:</span>
-                  <span style={styles.infoVal}>{teacher.email || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <Home size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Address:</span>
-                  <span style={styles.infoVal}>{teacher.address || '-'}</span>
-                </div>
                 
                 {isEditable && (
                   <div style={styles.infoRow}>
@@ -275,6 +295,33 @@ export default function TeachersModule({ userRole }) {
                   </select>
                 </div>
               </div>
+
+              {!editingTeacher && (
+                <div style={styles.formRow}>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="teacher@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label">Temporary Password *</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div style={styles.formRow}>
                 <div className="form-group" style={{ flex: 1 }}>

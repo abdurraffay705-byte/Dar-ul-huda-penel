@@ -75,7 +75,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
-            <button key={item.id} onClick={() => { setActiveTab(item.id); navigate(item.id); }} style={{ ...styles.navLink, ...(isActive ? styles.navLinkActive : {}) }}>
+            <button key={item.id} onClick={() => { setActiveTab(item.id); navigate('/' + item.id); }} style={{ ...styles.navLink, ...(isActive ? styles.navLinkActive : {}) }}>
   <Icon size={18} color={isActive ? '#d4af37' : '#94a3b8'} style={{ marginRight: 12, transition: 'color 0.2s' }} />
   <span style={styles.navLabel}>{item.label}</span>
   {isActive && <div style={styles.activeIndicator} />}

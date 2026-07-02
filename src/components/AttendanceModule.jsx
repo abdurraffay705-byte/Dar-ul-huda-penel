@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { CheckSquare, Calendar, UserCheck, Search, Info } from 'lucide-react';
+import { CheckSquare, Calendar, UserCheck, Search, Info, Trash2 } from 'lucide-react';
 
-export default function AttendanceModule() {
+export default function AttendanceModule({ userRole }) {
   const [activeTab, setActiveTab] = useState('student'); // 'student' | 'teacher' | 'reports'
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState('Grade 1');
@@ -39,11 +39,11 @@ export default function AttendanceModule() {
         const sheet = activeStudents.map(student => {
           const matched = loggedAtt.find(a => a.user_id === student.user_id);
           return {
-            id: student.user_id, // Attendance links to users.id!
+            id: student.user_id,
+            attendanceId: matched?.id || null,
             roll_no: student.roll_number,
             name: student.full_name,
-            status: matched ? matched.status.toLowerCase() : 'present', // default present
-            remarks: matched ? matched.remarks || '' : ''
+            status: matched ? matched.status.toLowerCase() : 'present'
           };
         });
         setAttendanceSheet(sheet);
@@ -58,10 +58,10 @@ export default function AttendanceModule() {
           const matched = loggedAtt.find(a => a.user_id === teacher.user_id);
           return {
             id: teacher.user_id,
+            attendanceId: matched?.id || null,
             roll_no: 'TEA-REF',
             name: teacher.full_name,
-            status: matched ? matched.status.toLowerCase() : 'present',
-            remarks: matched ? matched.remarks || '' : ''
+            status: matched ? matched.status.toLowerCase() : 'present'
           };
         });
         setAttendanceSheet(sheet);
@@ -86,12 +86,6 @@ export default function AttendanceModule() {
     );
   };
 
-  const handleRemarksChange = (userId, remarks) => {
-    setAttendanceSheet(prev => 
-      prev.map(row => row.id === userId ? { ...row, remarks } : row)
-    );
-  };
-
   const handleBulkMark = (status) => {
     setAttendanceSheet(prev => 
       prev.map(row => ({ ...row, status: status.toLowerCase() }))
@@ -112,6 +106,38 @@ export default function AttendanceModule() {
       console.error("Error saving attendance sheet:", e);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteSheetRecord = async (attendanceId, userId) => {
+    if (!window.confirm('Are you sure you want to delete this attendance record?')) {
+      return;
+    }
+
+    const res = await database.attendance.delete(attendanceId);
+    if (res.success) {
+      setAttendanceSheet(prev =>
+        prev.map(row =>
+          row.id === userId
+            ? { ...row, attendanceId: null, status: 'present' }
+            : row
+        )
+      );
+    } else {
+      alert('Failed to delete attendance record: ' + res.error);
+    }
+  };
+
+  const handleDeleteReportLog = async (logId) => {
+    if (!window.confirm('Are you sure you want to delete this attendance record?')) {
+      return;
+    }
+
+    const res = await database.attendance.delete(logId);
+    if (res.success) {
+      setReportLogs(prev => prev.filter(log => log.id !== logId));
+    } else {
+      alert('Failed to delete attendance record: ' + res.error);
     }
   };
 
@@ -181,6 +207,8 @@ export default function AttendanceModule() {
     row.roll_no.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const isEditable = userRole === 'admin' || userRole === 'teacher';
+
   return (
     <div className="fade-in">
       <h1 className="section-title"><CheckSquare size={24} color="var(--color-accent)" /> Attendance Management</h1>
@@ -209,7 +237,7 @@ export default function AttendanceModule() {
 
       {activeTab === 'reports' ? (
         <div style={styles.sheetContainer} className="glass-panel">
-          <h3 style={styles.sheetTitle} style={{ marginBottom: '1.25rem' }}>Attendance History & Reports</h3>
+          <h3 style={{ ...styles.sheetTitle, marginBottom: '1.25rem' }}>Attendance History & Reports</h3>
           
           <div style={styles.configBar} className="glass-panel">
             <div style={styles.configItem}>
@@ -286,7 +314,7 @@ export default function AttendanceModule() {
                   <tr>
                     <th>Date</th>
                     <th>Attendance Status</th>
-                    <th>Remarks / Notes</th>
+                    {isEditable && <th style={{ textAlign: 'right' }}>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -298,7 +326,13 @@ export default function AttendanceModule() {
                           {log.status}
                         </span>
                       </td>
-                      <td>{log.remarks || '-'}</td>
+                      {isEditable && (
+                        <td style={{ textAlign: 'right' }}>
+                          <button onClick={() => handleDeleteReportLog(log.id)} style={styles.deleteBtn} title="Delete record">
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -441,15 +475,15 @@ export default function AttendanceModule() {
                       </button>
                     </div>
 
-                    <div style={styles.rowRemarks}>
-                      <input
-                        type="text"
-                        placeholder="Add internal notes..."
-                        value={row.remarks}
-                        onChange={(e) => handleRemarksChange(row.id, e.target.value)}
-                        style={styles.remarksInput}
-                      />
-                    </div>
+                    {isEditable && row.attendanceId && (
+                      <button
+                        onClick={() => handleDeleteSheetRecord(row.attendanceId, row.id)}
+                        style={styles.deleteBtn}
+                        title="Delete saved record"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -645,21 +679,6 @@ const styles = {
     transition: 'all 0.15s ease',
     minWidth: '76px'
   },
-  rowRemarks: {
-    width: '240px',
-    '@media (max-width: 900px)': {
-      width: '100%'
-    }
-  },
-  remarksInput: {
-    width: '100%',
-    padding: '0.4rem 0.6rem',
-    fontSize: '0.8rem',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-sm)',
-    outline: 'none',
-    backgroundColor: '#fff'
-  },
   sheetFooter: {
     borderTop: '1px solid var(--color-border)',
     paddingTop: '1.25rem',
@@ -688,5 +707,20 @@ const styles = {
     border: '1px dashed var(--color-border)',
     borderRadius: 'var(--radius-md)',
     backgroundColor: '#fff'
+  },
+  deleteBtn: {
+    padding: '0.35rem 0.6rem',
+    fontSize: '0.78rem',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    color: 'var(--color-danger)',
+    border: '1px solid rgba(239, 68, 68, 0.15)',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    fontWeight: '500',
+    transition: 'all 0.15s',
+    flexShrink: 0
   }
 };

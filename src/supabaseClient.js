@@ -46,11 +46,103 @@ const getUserProfile = async (authUser) => {
   );
 };
 
+// ─────────────────────────────────────────────────────────────
+// AUTH HELPERS
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Wraps a promise with a hard timeout.
+ * Rejects with a TimeoutError after `ms` milliseconds if the
+ * original promise hasn't resolved yet.
+ */
+function withTimeout(promise, ms, label = 'operation') {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`[Auth] ${label} timed out after ${ms}ms`)),
+      ms
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Clears the stored Supabase session from both the SDK and
+ * localStorage so the bad token can never cause another hang.
+ */
+async function clearBadSession(reason) {
+  console.error('[Auth] Clearing bad/expired session:', reason);
+  try {
+    await supabase.auth.signOut();
+  } catch (_) {
+    // signOut itself might fail if the token is already invalid — safe to ignore.
+    // Belt-and-suspenders: also wipe the localStorage key directly.
+    const storageKey = Object.keys(localStorage).find(k =>
+      k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (storageKey) localStorage.removeItem(storageKey);
+  }
+}
+
 export const auth = {
+  /**
+   * getCurrentUser — safe session restoration:
+   *
+   * 1. getSession()  — reads localStorage only, zero network I/O.
+   *                    If nothing is stored we return null immediately.
+   * 2. getUser()     — validates the token with the Supabase auth server.
+   *                    Wrapped in a 7-second timeout so it can NEVER hang
+   *                    the app forever.
+   * 3. On any error  — the bad token is purged via signOut() so the next
+   *                    load won't hit the same problem again.
+   */
   getCurrentUser: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data?.user) return null;
-    return getUserProfile(data.user);
+    // ── Step 1: fast local check (no network) ──────────────────
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      await clearBadSession(sessionError.message);
+      return null;
+    }
+
+    // No stored session → nothing to validate, return immediately.
+    if (!sessionData?.session) return null;
+
+    // ── Step 2: validate token with the server (with timeout) ──
+    let authUser;
+    try {
+      const { data, error } = await withTimeout(
+        supabase.auth.getUser(),
+        7000,
+        'getUser()'
+      );
+
+      if (error) {
+        // JWT / auth errors mean the stored token is bad — clean it up.
+        const isAuthError =
+          error.status === 401 ||
+          error.status === 403 ||
+          /jwt|token|expired|invalid/i.test(error.message || '');
+
+        if (isAuthError) {
+          await clearBadSession(error.message);
+        } else {
+          console.error('[Auth] getUser() returned a non-auth error:', error);
+        }
+        return null;
+      }
+
+      authUser = data?.user ?? null;
+    } catch (err) {
+      // Covers both the timeout rejection and any unexpected SDK throw.
+      await clearBadSession(err.message);
+      return null;
+    }
+
+    if (!authUser) return null;
+
+    // ── Step 3: fetch the app-level profile from public.users ──
+    return getUserProfile(authUser);
   },
 
   signIn: async (email, password) => {
@@ -87,10 +179,7 @@ export const database = {
     },
 
     create: async (userPayload) => {
-      const {
-        full_name, phone, role, email,
-        education, age, father_name, mother_name, address, cnic
-      } = userPayload;
+      const { full_name, phone, role } = userPayload;
 
       const { data, error } = await supabase
         .from('users')
@@ -98,14 +187,7 @@ export const database = {
           id: uuidv4(),
           full_name,
           phone,
-          role,
-          email,
-          education,
-          age: age ? Number(age) : null,
-          father_name,
-          mother_name,
-          address,
-          cnic
+          role
         })
         .select();
 
@@ -114,19 +196,11 @@ export const database = {
     },
 
     update: async (id, userPayload) => {
-      const {
-        full_name, phone, role, email,
-        education, age, father_name, mother_name, address, cnic
-      } = userPayload;
+      const { full_name, phone, role } = userPayload;
 
       const { data, error } = await supabase
         .from('users')
-        .update({
-          full_name, phone, role, email,
-          education,
-          age: age ? Number(age) : null,
-          father_name, mother_name, address, cnic
-        })
+        .update({ full_name, phone, role })
         .eq('id', id)
         .select();
 
@@ -151,13 +225,12 @@ export const database = {
       return data.map(s => ({
         ...s,
         full_name: s.users?.full_name || '',
-        phone: s.users?.phone || '',
-        email: s.users?.email || ''
+        phone: s.users?.phone || ''
       }));
     },
 
     create: async (studentPayload) => {
-      const { full_name, phone, email, class_name, roll_number, father_name, address } = studentPayload;
+      const { full_name, phone, class_name, roll_number, father_name, address } = studentPayload;
 
       // 1. Create user row
       const newUserId = uuidv4();
@@ -167,9 +240,7 @@ export const database = {
           id: newUserId,
           full_name,
           phone,
-          email: email || null,
-          role: 'student',
-          created_at: new Date().toISOString()
+          role: 'student'
         })
         .select();
 
@@ -195,16 +266,11 @@ export const database = {
     },
 
     update: async (id, studentPayload) => {
-      const { full_name, phone, email, class_name, roll_number, father_name, address, user_id } = studentPayload;
-
-      const userUpdate = { full_name, phone };
-      if (email !== undefined) {
-        userUpdate.email = email || null;
-      }
+      const { full_name, phone, class_name, roll_number, father_name, address, user_id } = studentPayload;
 
       const { error: userErr } = await supabase
         .from('users')
-        .update(userUpdate)
+        .update({ full_name, phone })
         .eq('id', user_id);
       if (userErr) return { success: false, error: userErr.message };
 
@@ -244,22 +310,20 @@ export const database = {
       return data.map(t => ({
         ...t,
         full_name: t.users?.full_name || '',
-        phone: t.users?.phone || '',
-        email: t.users?.email || ''
+        phone: t.users?.phone || ''
       }));
     },
 
     create: async (teacherPayload) => {
-      const { full_name, phone, email, subject, qualification, salary, joining_date } = teacherPayload;
+      const { full_name, phone, subject, qualification, salary, joining_date, user_id } = teacherPayload;
 
-      const newUserId = uuidv4();
+      const newUserId = user_id || uuidv4();
       const { error: userErr } = await supabase
         .from('users')
         .insert({
           id: newUserId,
           full_name,
           phone,
-          email: email || null,
           role: 'teacher'
         });
       if (userErr) return { success: false, error: userErr.message };
@@ -283,16 +347,11 @@ export const database = {
     },
 
     update: async (id, teacherPayload) => {
-      const { full_name, phone, email, subject, qualification, salary, joining_date, user_id } = teacherPayload;
-
-      const userUpdate = { full_name, phone };
-      if (email !== undefined) {
-        userUpdate.email = email || null;
-      }
+      const { full_name, phone, subject, qualification, salary, joining_date, user_id } = teacherPayload;
 
       const { error: userErr } = await supabase
         .from('users')
-        .update(userUpdate)
+        .update({ full_name, phone })
         .eq('id', user_id);
       if (userErr) return { success: false, error: userErr.message };
 
@@ -406,6 +465,12 @@ export const database = {
 
       if (error) return { success: false, error: error.message };
       return { success: true, data };
+    },
+
+    delete: async (id) => {
+      const { error } = await supabase.from('attendance').delete().eq('id', id);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
     }
   },
 
@@ -446,6 +511,12 @@ export const database = {
         .from('fees')
         .update({ status: newStatus })
         .eq('id', feeId);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    },
+
+    delete: async (feeId) => {
+      const { error } = await supabase.from('fees').delete().eq('id', feeId);
       if (error) return { success: false, error: error.message };
       return { success: true };
     },
@@ -510,6 +581,12 @@ export const database = {
         .select();
       if (error) return { success: false, error: error.message };
       return { success: true, data: data[0] };
+    },
+
+    delete: async (id) => {
+      const { error } = await supabase.from('donations').delete().eq('id', id);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
     }
   },
 

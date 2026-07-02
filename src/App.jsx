@@ -32,15 +32,20 @@ export default function App() {
     let mounted = true;
 
     const restoreSession = async () => {
-      const currentUser = await auth.getCurrentUser();
-      if (!mounted) return;
+      try {
+        const currentUser = await auth.getCurrentUser();
+        if (!mounted) return;
 
-      if (currentUser) {
-        setUser(currentUser);
-        setDefaultTabForRole(currentUser.role);
+        if (currentUser) {
+          setUser(currentUser);
+          setDefaultTabForRole(currentUser.role);
+        }
+      } catch (err) {
+        console.error('[Auth] restoreSession failed:', err);
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setAuthLoading(false);
       }
-
-      setAuthLoading(false);
     };
 
     restoreSession();
@@ -53,14 +58,20 @@ export default function App() {
       }
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        const currentUser = await auth.getCurrentUser();
-        if (!mounted) return;
+        try {
+          const currentUser = await auth.getCurrentUser();
+          if (!mounted) return;
 
-        setUser(currentUser);
-        if (currentUser) {
-          setDefaultTabForRole(currentUser.role);
+          setUser(currentUser);
+          if (currentUser) {
+            setDefaultTabForRole(currentUser.role);
+          }
+        } catch (err) {
+          console.error('[Auth] onAuthStateChange failed:', err);
+          if (mounted) setUser(null);
+        } finally {
+          if (mounted) setAuthLoading(false);
         }
-        setAuthLoading(false);
       }
     });
 
@@ -84,6 +95,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public route */}
         <Route
           path="/login"
           element={
@@ -97,79 +109,84 @@ export default function App() {
           }
         />
 
-        <Route
-          path="/*"
-          element={
-            authLoading ? (
-              <div style={styles.loadingScreen}>Checking your session...</div>
-            ) : user ? (
-              <div style={styles.appContainer}>
-                {/* SIDEBAR FOR DESKTOP SCREEN */}
-                <div style={styles.desktopSidebar}>
-                  <Sidebar
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    user={user}
-                    onLogout={handleLogout}
-                  />
-                </div>
+        {/* Root redirect */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-                {/* MOBILE HEADER BANNER */}
-                <header style={styles.mobileHeader} className="no-print">
-                  <button onClick={() => setMobileMenuOpen(true)} style={styles.menuToggle}>
-                    <Menu size={22} color="var(--color-primary)" />
-                  </button>
-                  <span style={styles.mobileTitle} className="brand-title">DAR UL HUDA</span>
-                  <div style={styles.mobileAvatar}>
-                    {user.email.charAt(0).toUpperCase()}
+        {/* Protected module routes — all top-level with absolute paths */}
+        {[
+          { path: '/dashboard', element: <DashboardHome setActiveTab={setActiveTab} /> },
+          { path: '/students',  element: <StudentsModule  userRole={user?.role} /> },
+          { path: '/teachers',  element: <TeachersModule  userRole={user?.role} /> },
+          { path: '/users',     element: <UsersModule     userRole={user?.role} /> },
+          { path: '/fees',      element: <FeesModule      userRole={user?.role} /> },
+          { path: '/attendance',element: <AttendanceModule userRole={user?.role} /> },
+          { path: '/donations', element: <DonationsModule userRole={user?.role} /> },
+          { path: '/cms',       element: <CMSModule       userRole={user?.role} /> },
+          { path: '/courses',   element: <CoursesModule   userRole={user?.role} /> },
+          { path: '/settings',  element: <SettingsModule /> },
+        ].map(({ path, element }) => (
+          <Route
+            key={path}
+            path={path}
+            element={
+              authLoading ? (
+                <div style={styles.loadingScreen}>Checking your session...</div>
+              ) : user ? (
+                <div style={styles.appContainer}>
+                  {/* SIDEBAR FOR DESKTOP SCREEN */}
+                  <div style={styles.desktopSidebar}>
+                    <Sidebar
+                      activeTab={activeTab}
+                      setActiveTab={setActiveTab}
+                      user={user}
+                      onLogout={handleLogout}
+                    />
                   </div>
-                </header>
 
-                {/* MOBILE DRAWER SIDEBAR PANEL */}
-                {mobileMenuOpen && (
-                  <div style={styles.mobileDrawerOverlay} onClick={() => setMobileMenuOpen(false)}>
-                    <div style={styles.mobileDrawer} onClick={(e) => e.stopPropagation()} className="fade-in">
-                      <div style={styles.drawerCloseBar}>
-                        <button onClick={() => setMobileMenuOpen(false)} style={styles.menuCloseBtn}>
-                          <X size={22} />
-                        </button>
-                      </div>
-
-                      <Sidebar
-                        activeTab={activeTab}
-                        setActiveTab={(tab) => {
-                          setActiveTab(tab);
-                          setMobileMenuOpen(false);
-                        }}
-                        user={user}
-                        onLogout={handleLogout}
-                      />
+                  {/* MOBILE HEADER BANNER */}
+                  <header style={styles.mobileHeader} className="no-print">
+                    <button onClick={() => setMobileMenuOpen(true)} style={styles.menuToggle}>
+                      <Menu size={22} color="var(--color-primary)" />
+                    </button>
+                    <span style={styles.mobileTitle} className="brand-title">DAR UL HUDA</span>
+                    <div style={styles.mobileAvatar}>
+                      {user.email.charAt(0).toUpperCase()}
                     </div>
-                  </div>
-                )}
+                  </header>
 
-                {/* MAIN CONTENT WORKSPACE VIEWPORT */}
-                <main style={styles.mainContent}>
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/dashboard" element={<DashboardHome setActiveTab={setActiveTab} />} />
-                    <Route path="/students" element={<StudentsModule userRole={user.role} />} />
-                    <Route path="/teachers" element={<TeachersModule userRole={user.role} />} />
-                    <Route path="/users" element={<UsersModule userRole={user.role} />} />
-                    <Route path="/fees" element={<FeesModule userRole={user.role} />} />
-                    <Route path="/attendance" element={<AttendanceModule userRole={user.role} />} />
-                    <Route path="/donations" element={<DonationsModule userRole={user.role} />} />
-                    <Route path="/cms" element={<CMSModule userRole={user.role} />} />
-                    <Route path="/courses" element={<CoursesModule userRole={user.role} />} />
-                    <Route path="/settings" element={<SettingsModule />} />
-                  </Routes>
-                </main>
-              </div>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
+                  {/* MOBILE DRAWER SIDEBAR PANEL */}
+                  {mobileMenuOpen && (
+                    <div style={styles.mobileDrawerOverlay} onClick={() => setMobileMenuOpen(false)}>
+                      <div style={styles.mobileDrawer} onClick={(e) => e.stopPropagation()} className="fade-in">
+                        <div style={styles.drawerCloseBar}>
+                          <button onClick={() => setMobileMenuOpen(false)} style={styles.menuCloseBtn}>
+                            <X size={22} />
+                          </button>
+                        </div>
+                        <Sidebar
+                          activeTab={activeTab}
+                          setActiveTab={(tab) => {
+                            setActiveTab(tab);
+                            setMobileMenuOpen(false);
+                          }}
+                          user={user}
+                          onLogout={handleLogout}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MAIN CONTENT WORKSPACE VIEWPORT */}
+                  <main style={styles.mainContent}>
+                    {element}
+                  </main>
+                </div>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+        ))}
       </Routes>
     </BrowserRouter>
   );

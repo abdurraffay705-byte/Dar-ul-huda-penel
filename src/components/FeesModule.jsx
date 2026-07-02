@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History } from 'lucide-react';
+import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2 } from 'lucide-react';
 import logoImg from '../assets/logo.jpg';
 
 export default function FeesModule({ userRole }) {
@@ -24,7 +24,6 @@ export default function FeesModule({ userRole }) {
     student_id: '',
     amount: 3500,
     due_date: new Date().toISOString().split('T')[0],
-    payment_mode: 'cash',
     status: 'unpaid'
   });
 
@@ -91,7 +90,8 @@ export default function FeesModule({ userRole }) {
     setInvoiceForm({
       student_id: students[0].id,
       amount: 3500,
-      due_date: new Date().toISOString().split('T')[0]
+      due_date: new Date().toISOString().split('T')[0],
+      status: 'unpaid'
     });
     setIsInvoiceOpen(true);
   };
@@ -113,8 +113,10 @@ export default function FeesModule({ userRole }) {
   const handleInvoiceSubmit = async (e) => {
     e.preventDefault();
     const res = await database.fees.create({
-      ...invoiceForm,
-      amount: Number(invoiceForm.amount)
+      student_id: invoiceForm.student_id,
+      amount: Number(invoiceForm.amount),
+      due_date: invoiceForm.due_date,
+      status: invoiceForm.status || 'unpaid'
     });
     if (res.success) {
       setIsInvoiceOpen(false);
@@ -149,6 +151,30 @@ const handleMarkPaid = async (feeId) => {
     loadFeeData();
   } else {
     alert('Failed to mark as paid: ' + res.error);
+  }
+};
+
+const handleDeleteInvoice = async (feeId) => {
+  if (!window.confirm('Are you sure you want to delete this invoice?')) {
+    return;
+  }
+
+  const res = await database.fees.delete(feeId);
+  if (res.success) {
+    if (activeInvoice?.id === feeId) {
+      setActiveInvoice(null);
+    }
+    setFees(prev => prev.filter(f => f.id !== feeId));
+    const deletedFee = fees.find(f => f.id === feeId);
+    if (deletedFee) {
+      setStats(prev => ({
+        totalDue: prev.totalDue - Number(deletedFee.amount),
+        totalPaid: prev.totalPaid - Number(deletedFee.total_paid),
+        totalPending: prev.totalPending - (Number(deletedFee.amount) - Number(deletedFee.total_paid))
+      }));
+    }
+  } else {
+    alert('Failed to delete invoice: ' + res.error);
   }
 };
 
@@ -284,6 +310,16 @@ const handlePrint = () => {
                         Mark as Paid
                       </button>
                     )}
+                    {isEditable && (
+                      <button
+                        onClick={() => handleDeleteInvoice(fee.id)}
+                        className="btn-secondary"
+                        style={{ ...styles.invoiceBtn, color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                        title="Delete invoice"
+                      >
+                        <Trash2 size={13} style={{ marginRight: 4 }} /> Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -304,18 +340,6 @@ const handlePrint = () => {
             </div>
 
             <form onSubmit={handleInvoiceSubmit} style={styles.modalForm}>
-                <div className="form-group">
-                  <label className="form-label">Payment Mode *</label>
-                  <select
-                    value={invoiceForm.payment_mode}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, payment_mode: e.target.value })}
-                    className="form-input"
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="bank">Bank Transfer</option>
-                    <option value="online">Online Payment</option>
-                  </select>
-                </div>
                 <div className="form-group">
                   <label className="form-label">Status *</label>
                   <select

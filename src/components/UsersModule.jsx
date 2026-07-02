@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Phone, Mail, Home, GraduationCap, Calendar, IdCard, Users as UsersIcon } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Phone, Users as UsersIcon } from 'lucide-react';
 
 export default function UsersModule({ userRole }) {
   const [users, setUsers] = useState([]);
@@ -16,14 +16,7 @@ export default function UsersModule({ userRole }) {
   const blankForm = {
     full_name: '',
     phone: '',
-    role: 'student',
-    email: '',
-    education: '',
-    age: '',
-    father_name: '',
-    mother_name: '',
-    address: '',
-    cnic: ''
+    role: 'student'
   };
 
   const [formData, setFormData] = useState(blankForm);
@@ -58,14 +51,7 @@ export default function UsersModule({ userRole }) {
     setFormData({
       full_name: user.full_name || '',
       phone: user.phone || '',
-      role: user.role || 'student',
-      email: user.email || '',
-      education: user.education || '',
-      age: user.age || '',
-      father_name: user.father_name || '',
-      mother_name: user.mother_name || '',
-      address: user.address || '',
-      cnic: user.cnic || ''
+      role: user.role || 'student'
     });
     setEditingUser(user);
     setIsFormOpen(true);
@@ -105,7 +91,7 @@ export default function UsersModule({ userRole }) {
   };
 
   const filteredUsers = users.filter(u => {
-    const matchesSearch = `${u.full_name} ${u.email} ${u.cnic}`
+    const matchesSearch = `${u.full_name} ${u.phone}`
       .toLowerCase()
       .includes(search.toLowerCase());
     const matchesRole = roleFilter === '' || u.role === roleFilter;
@@ -133,7 +119,7 @@ export default function UsersModule({ userRole }) {
           <Search size={16} color="#64748b" />
           <input
             type="text"
-            placeholder="Search by name, email, CNIC..."
+            placeholder="Search by name or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={styles.searchInput}
@@ -189,44 +175,9 @@ export default function UsersModule({ userRole }) {
 
               <div style={styles.cardBody}>
                 <div style={styles.infoRow}>
-                  <Mail size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Email:</span>
-                  <span style={styles.infoVal}>{user.email || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
                   <Phone size={14} color="#64748b" />
                   <span style={styles.infoLabel}>Phone:</span>
                   <span style={styles.infoVal}>{user.phone || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <GraduationCap size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Education:</span>
-                  <span style={styles.infoVal}>{user.education || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <Calendar size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Age:</span>
-                  <span style={styles.infoVal}>{user.age || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <UsersIcon size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Father:</span>
-                  <span style={styles.infoVal}>{user.father_name || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <UsersIcon size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Mother:</span>
-                  <span style={styles.infoVal}>{user.mother_name || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <Home size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Address:</span>
-                  <span style={styles.infoVal}>{user.address || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <IdCard size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>CNIC:</span>
-                  <span style={styles.infoVal}>{user.cnic || '-'}</span>
                 </div>
               </div>
 
@@ -285,93 +236,12 @@ export default function UsersModule({ userRole }) {
 
               <div style={styles.formRow}>
                 <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Email *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="e.g. name@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Phone *</label>
+                  <label className="form-label">Phone</label>
                   <input
                     type="text"
-                    required
                     placeholder="e.g. +92 300 1234567"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div style={styles.formRow}>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Education</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Matric, BA, Hafiz-e-Quran"
-                    value={formData.education}
-                    onChange={(e) => setFormData({ ...formData, education: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Age</label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 24"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div style={styles.formRow}>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Father's Name</label>
-                  <input
-                    type="text"
-                    placeholder="Father's Name"
-                    value={formData.father_name}
-                    onChange={(e) => setFormData({ ...formData, father_name: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Mother's Name</label>
-                  <input
-                    type="text"
-                    placeholder="Mother's Name"
-                    value={formData.mother_name}
-                    onChange={(e) => setFormData({ ...formData, mother_name: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div style={styles.formRow}>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Address</label>
-                  <input
-                    type="text"
-                    placeholder="Street, area, city"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">CNIC</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 35202-1234567-1"
-                    value={formData.cnic}
-                    onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
                     className="form-input"
                   />
                 </div>

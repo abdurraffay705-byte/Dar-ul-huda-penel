@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X } from 'lucide-react';
+import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X, Trash2 } from 'lucide-react';
 
 export default function DonationsModule({ userRole }) {
   const [donations, setDonations] = useState([]);
@@ -60,6 +60,19 @@ export default function DonationsModule({ userRole }) {
       loadDonations();
     } else {
       alert("Failed to log charity donation: " + res.error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this donation record?')) {
+      return;
+    }
+
+    const res = await database.donations.delete(id);
+    if (res.success) {
+      setDonations(prev => prev.filter(d => d.id !== id));
+    } else {
+      alert('Failed to delete donation: ' + res.error);
     }
   };
 
@@ -193,6 +206,7 @@ export default function DonationsModule({ userRole }) {
                 <th>Payment Mode</th>
                 <th>Receipt Date</th>
                 <th style={{ textAlign: 'right' }}>Amount Received</th>
+                {isEditable && <th style={{ textAlign: 'right' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -207,6 +221,13 @@ export default function DonationsModule({ userRole }) {
                   <td style={{ textAlign: 'right', fontWeight: '800', color: 'var(--color-primary)' }}>
                     PKR {Number(donation.amount).toLocaleString()}
                   </td>
+                  {isEditable && (
+                    <td style={{ textAlign: 'right' }}>
+                      <button onClick={() => handleDelete(donation.id)} style={styles.deleteBtn} title="Delete donation">
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -525,5 +546,19 @@ const styles = {
     border: '1px dashed var(--color-border)',
     borderRadius: 'var(--radius-md)',
     backgroundColor: '#fff'
+  },
+  deleteBtn: {
+    padding: '0.35rem 0.6rem',
+    fontSize: '0.78rem',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    color: 'var(--color-danger)',
+    border: '1px solid rgba(239, 68, 68, 0.15)',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    fontWeight: '500',
+    transition: 'all 0.15s'
   }
 };
