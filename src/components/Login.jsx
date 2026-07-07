@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Lock, Mail, Shield, Server } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 import logoImg from '../assets/logo.jpg';
 import { auth } from '../supabaseClient';
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('admin');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -27,15 +26,15 @@ export default function Login({ onLogin }) {
     <div style={styles.container}>
       <div style={styles.decorLeft}></div>
       <div style={styles.decorRight}></div>
-      
+
       <div style={styles.card} className="glass-panel fade-in">
         <div style={styles.logoSection}>
-          <img 
-            src={logoImg} 
-            style={styles.logoImg} 
-            alt="Dar-ul-Huda Trust Logo" 
+          <img
+            src={logoImg}
+            style={styles.logoImg}
+            alt="Dar-ul-Huda Trust Logo"
           />
-          <h1 style={styles.title} className="brand-title">DAR UL HUDA</h1>
+          <h1 style={styles.title}>DAR UL HUDA</h1>
           <p style={styles.subtitle}>QURANIC TRUST EDUCATION</p>
         </div>
 
@@ -72,31 +71,12 @@ export default function Login({ onLogin }) {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" style={styles.label}>
-              <Shield size={16} style={{ marginRight: 6 }} /> User Role
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="form-input"
-              style={styles.select}
-            >
-              <option value="admin">Administrator (Full Access)</option>
-              <option value="teacher">Teacher (Attendance & Rosters)</option>
-              <option value="student">Student / Parent (Fees & Announcements)</option>
-            </select>
-          </div>
-
           <button type="submit" className="btn-accent" style={styles.submitBtn}>
             Sign In to Dashboard
           </button>
         </form>
 
-        <div style={styles.dbBadge}>
-          <Server size={14} style={{ marginRight: 5 }} />
-          Status: Supabase Live Connected
-        </div>
+
       </div>
     </div>
   );
@@ -154,7 +134,7 @@ const styles = {
     height: '82px',
     borderRadius: '50%',
     objectFit: 'cover',
-    marginBottom: '0.75rem',
+    marginBottom: '1.75rem',
     border: '3px solid var(--color-accent-gold)',
     boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
     filter: 'drop-shadow(0 2px 8px rgba(212, 175, 55, 0.3))'
@@ -162,7 +142,12 @@ const styles = {
   title: {
     fontSize: '1.85rem',
     letterSpacing: '0.08em',
-    marginBottom: '0.2rem'
+    marginBottom: '0.5rem',
+    lineHeight: 1.25,
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    color: '#daba53',
+    WebkitTextFillColor: '#daba53'
   },
   subtitle: {
     fontSize: '0.72rem',
@@ -185,16 +170,8 @@ const styles = {
     padding: '0.65rem 0.8rem',
     border: '1px solid #cbd5e1'
   },
-  select: {
-    fontSize: '0.95rem',
-    borderRadius: 'var(--radius-sm)',
-    padding: '0.65rem 0.8rem',
-    border: '1px solid #cbd5e1',
-    cursor: 'pointer'
-  },
   submitBtn: {
     width: '100%',
-    padding: '0.75rem',
     borderRadius: 'var(--radius-sm)',
     fontSize: '1rem',
     fontWeight: '600',

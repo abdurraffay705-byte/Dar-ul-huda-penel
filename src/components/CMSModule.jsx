@@ -73,14 +73,16 @@ export default function CMSModule({ userRole }) {
     }
   };
 
-  const isEditable = userRole === 'admin';
+  const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+  const isEditable = norm === 'admin' || norm === 'data_entry';
+  const isAdmin = norm === 'admin';
 
   return (
     <div className="fade-in" style={styles.container}>
-      <h1 className="section-title"><FileText size={24} color="var(--color-accent)" /> Notice Board & CMS Announcements</h1>
+      <h1 className="section-title">CMS Notice Board</h1>
 
-      <div style={styles.contentLayout}>
-        {/* CREATE ANNOUNCEMENT FORM (Only visible to Admin) */}
+      <div style={styles.layout}>
+        {/* PUBLISH NOTICE FORM — full width, always visible to editors */}
         {isEditable ? (
           <div className="glass-panel" style={styles.editorBox}>
             <h3 style={styles.boxTitle}><PlusCircle size={16} color="var(--color-accent)" style={{ marginRight: 6 }} /> Publish Notice</h3>
@@ -129,7 +131,7 @@ export default function CMSModule({ userRole }) {
                 type="submit" 
                 disabled={submitting} 
                 className="btn-accent" 
-                style={{ width: '100%', padding: '0.65rem', justifyContent: 'center' }}
+                style={{ width: '100%', justifyContent: 'center' }}
               >
                 <BellRing size={16} /> {submitting ? 'Broadcasting notice...' : 'Publish Announcement'}
               </button>
@@ -145,56 +147,56 @@ export default function CMSModule({ userRole }) {
           </div>
         )}
 
-        {/* NOTICES TIMELINE STREAM */}
-        <div style={styles.timelineArea}>
-          <h3 style={styles.boxTitle}><BellRing size={16} color="var(--color-primary-light)" style={{ marginRight: 6 }} /> Active Announcements</h3>
+        {/* NOTICES TIMELINE — only shown while loading or when notices exist */}
+        {(loading || notices.length > 0) && (
+          <div style={styles.timelineArea}>
+            <h3 style={styles.boxTitle}><BellRing size={16} color="var(--color-primary-light)" style={{ marginRight: 6 }} /> Active Announcements</h3>
 
-          {loading ? (
-            <div style={styles.innerLoader}>
-              <div className="spinner" style={styles.spinner}></div>
-              <p style={{ marginTop: 10 }}>Loading timeline board...</p>
-            </div>
-          ) : notices.length === 0 ? (
-            <div style={styles.noData}>No active notices have been posted on the bulletin board.</div>
-          ) : (
-            <div style={styles.noticeStream}>
-              {notices.map((n) => (
-                <div 
-                  key={n.id} 
-                  className="glass-panel" 
-                  style={{
-                    ...styles.noticeCard,
-                    borderLeftColor: n.urgency === 'High' ? 'var(--color-danger)' : (n.urgency === 'Medium' ? 'var(--color-warning)' : 'var(--color-info)'),
-                    backgroundColor: n.urgency === 'High' ? '#fffbfb' : '#ffffff'
-                  }}
-                >
-                  <div style={styles.noticeMeta}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className={`badge ${n.urgency === 'High' ? 'danger' : (n.urgency === 'Medium' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>
-                        {n.urgency} Urgency
+            {loading ? (
+              <div style={styles.innerLoader}>
+                <div className="spinner" style={styles.spinner}></div>
+                <p style={{ marginTop: 10 }}>Loading timeline board...</p>
+              </div>
+            ) : (
+              <div style={styles.noticeStream}>
+                {notices.map((n) => (
+                  <div 
+                    key={n.id} 
+                    className="glass-panel" 
+                    style={{
+                      ...styles.noticeCard,
+                      borderLeftColor: n.urgency === 'High' ? 'var(--color-danger)' : (n.urgency === 'Medium' ? 'var(--color-warning)' : 'var(--color-info)'),
+                      backgroundColor: n.urgency === 'High' ? '#fffbfb' : '#ffffff'
+                    }}
+                  >
+                    <div style={styles.noticeMeta}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className={`badge ${n.urgency === 'High' ? 'danger' : (n.urgency === 'Medium' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>
+                          {n.urgency} Urgency
+                        </span>
+                        {n.urgency === 'High' && <AlertTriangle size={14} color="var(--color-danger)" className="fade-in" style={{ animation: 'spin 4s linear infinite' }} />}
+                      </div>
+                      <span style={styles.noticeDate}>
+                        <Calendar size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {n.published_date}
                       </span>
-                      {n.urgency === 'High' && <AlertTriangle size={14} color="var(--color-danger)" className="fade-in" style={{ animation: 'spin 4s linear infinite' }} />}
                     </div>
-                    <span style={styles.noticeDate}>
-                      <Calendar size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {n.published_date}
-                    </span>
+
+                    <h3 style={styles.noticeTitle}>{n.title}</h3>
+                    <p style={styles.noticeBody}>{n.content}</p>
+
+                    {isAdmin && (
+                      <div style={styles.cardActions}>
+                        <button onClick={() => handleDelete(n.id)} style={styles.deleteBtn}>
+                          <Trash2 size={13} style={{ marginRight: 4 }} /> Pull Down Announcement
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                  <h3 style={styles.noticeTitle}>{n.title}</h3>
-                  <p style={styles.noticeBody}>{n.content}</p>
-
-                  {isEditable && (
-                    <div style={styles.cardActions}>
-                      <button onClick={() => handleDelete(n.id)} style={styles.deleteBtn}>
-                        <Trash2 size={13} style={{ marginRight: 4 }} /> Pull Down Announcement
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -204,19 +206,17 @@ const styles = {
   container: {
     padding: '0 0.5rem'
   },
-  contentLayout: {
-    display: 'grid',
-    gridTemplateColumns: '1.2fr 2fr',
-    gap: '2.5rem',
-    alignItems: 'flex-start',
-    '@media (max-width: 900px)': {
-      gridTemplateColumns: '1fr'
-    }
+  layout: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5rem'
   },
+  // Styles moved to .cms-content-layout in index.css
   editorBox: {
     backgroundColor: '#fff',
     padding: '1.5rem',
-    boxShadow: 'var(--shadow-md)'
+    boxShadow: 'var(--shadow-md)',
+    width: '100%'
   },
   viewerWelcome: {
     backgroundColor: '#fff',
@@ -250,7 +250,7 @@ const styles = {
     paddingBottom: '0.5rem'
   },
   timelineArea: {
-    flex: 1
+    width: '100%'
   },
   noticeStream: {
     display: 'flex',

@@ -1,14 +1,14 @@
 import { useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  UserSquare2, 
+import {
+  LayoutDashboard,
+  Users,
+  UserSquare2,
   GraduationCap,
-  CreditCard, 
-  CheckSquare, 
-  HeartHandshake, 
-  FileText, 
-  Settings, 
+  CreditCard,
+  CheckSquare,
+  HeartHandshake,
+  FileText,
+  Settings,
   LogOut,
   BookOpen
 } from 'lucide-react';
@@ -19,36 +19,38 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
   const roleDisplay = {
     admin: 'Administrator',
     teacher: 'Instructor / Teacher',
-    student: 'Student / Parent'
+    student: 'Student / Parent',
+    data_entry: 'Data Entry Operator'
   };
 
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher', 'student'] },
     { id: 'users', label: 'Users Management', icon: Users, roles: ['admin'] },
-    { id: 'students', label: 'Students Roster', icon: GraduationCap, roles: ['admin', 'teacher', 'student'] },
-    { id: 'teachers', label: 'Teachers Registry', icon: UserSquare2, roles: ['admin', 'teacher'] },
+    { id: 'students', label: 'Students Roster', icon: GraduationCap, roles: ['admin', 'teacher', 'student', 'data_entry'] },
+    { id: 'teachers', label: 'Teachers Registry', icon: UserSquare2, roles: ['admin', 'teacher', 'data_entry'] },
     { id: 'courses', label: 'Courses Registry', icon: BookOpen, roles: ['admin', 'teacher', 'student'] },
-    { id: 'attendance', label: 'Attendance Ledger', icon: CheckSquare, roles: ['admin', 'teacher'] },
-    { id: 'fees', label: 'Tuition Fees', icon: CreditCard, roles: ['admin', 'student'] },
-    { id: 'donations', label: 'Donation Funds', icon: HeartHandshake, roles: ['admin'] },
-    { id: 'cms', label: 'CMS Notice Board', icon: FileText, roles: ['admin', 'teacher', 'student'] },
+    { id: 'attendance', label: 'Attendance Ledger', icon: CheckSquare, roles: ['admin', 'teacher', 'data_entry'] },
+    { id: 'fees', label: 'Tuition Fees', icon: CreditCard, roles: ['admin', 'student', 'data_entry'] },
+    { id: 'donations', label: 'Donation Funds', icon: HeartHandshake, roles: ['admin', 'data_entry'] },
+    { id: 'cms', label: 'CMS Notice Board', icon: FileText, roles: ['admin', 'teacher', 'student', 'data_entry'] },
     { id: 'settings', label: 'Supabase Settings', icon: Settings, roles: ['admin'] }
   ];
 
   // Filter items based on user role
-  const visibleItems = menuItems.filter(item => item.roles.includes(user.role));
+  const userRoleNormalized = user.role?.toLowerCase().replace(/[- ]/g, '_') || '';
+  const visibleItems = menuItems.filter(item => item.roles.includes(userRoleNormalized));
 
   return (
     <div style={styles.sidebar}>
       {/* BRANDING SECTION WITH REAL CROWN LOGO */}
       <div style={styles.brand}>
-        <img 
-          src={logoImg} 
-          style={styles.logoImg} 
-          alt="Dar-ul-Huda Trust Logo" 
+        <img
+          src={logoImg}
+          style={styles.logoImg}
+          alt="Dar-ul-Huda Trust Logo"
         />
-        <div>
+        <div style={styles.brandTextWrapper}>
           <h2 style={styles.brandTitle} className="brand-title">DAR UL HUDA</h2>
           <span style={styles.brandSubtitle}>QURANIC TRUST</span>
         </div>
@@ -63,8 +65,8 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
           <div style={styles.profileName} title={user.email}>
             {user.email.split('@')[0]}
           </div>
-          <span style={styles.roleBadge} className={user.role === 'admin' ? 'badge warning' : 'badge success'}>
-            {roleDisplay[user.role]}
+          <span style={styles.roleBadge} className={userRoleNormalized === 'admin' ? 'badge warning' : 'badge success'}>
+            {roleDisplay[userRoleNormalized] || user.role}
           </span>
         </div>
       </div>
@@ -75,11 +77,11 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
-            <button key={item.id} onClick={() => { setActiveTab(item.id); navigate('/' + item.id); }} style={{ ...styles.navLink, ...(isActive ? styles.navLinkActive : {}) }}>
-  <Icon size={18} color={isActive ? '#d4af37' : '#94a3b8'} style={{ marginRight: 12, transition: 'color 0.2s' }} />
-  <span style={styles.navLabel}>{item.label}</span>
-  {isActive && <div style={styles.activeIndicator} />}
-</button>
+            <button key={item.id} onClick={() => { setActiveTab(item.id); navigate('/' + item.id); }} style={{ ...styles.navLink, ...(isActive ? styles.navLinkActive : {}) }} className="sidebar-nav-button">
+              <Icon size={18} color={isActive ? '#d4af37' : '#94a3b8'} style={{ transition: 'color 0.2s' }} />
+              <span style={styles.navLabel}>{item.label}</span>
+              {isActive && <div style={styles.activeIndicator} />}
+            </button>
           );
         })}
       </div>
@@ -95,7 +97,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
             Supabase Live
           </span>
         </div>
-        
+
         <button onClick={onLogout} style={styles.logoutBtn}>
           <LogOut size={16} style={{ marginRight: 8 }} /> Sign Out
         </button>
@@ -107,7 +109,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
 const styles = {
   sidebar: {
     width: '270px',
-    backgroundColor: 'var(--color-bg-sidebar)',
+    backgroundColor: '#04382b',
     color: 'var(--color-text-light)',
     height: '100vh',
     display: 'flex',
@@ -123,7 +125,7 @@ const styles = {
     padding: '1.25rem 1.25rem',
     display: 'flex',
     alignItems: 'center',
-    gap: '0.65rem',
+    gap: '0.35rem',
     borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
   },
   logoImg: {
@@ -138,20 +140,29 @@ const styles = {
     fontSize: '1.15rem',
     fontWeight: '700',
     margin: 0,
-    lineHeight: 1.1
+    lineHeight: 1,
+    color: '#daba53',
+    WebkitTextFillColor: '#daba53'
   },
   brandSubtitle: {
     fontSize: '0.6rem',
     letterSpacing: '0.12em',
     color: '#a7f3d0',
-    fontWeight: '600'
+    fontWeight: '600',
+    lineHeight: 1
+  },
+  brandTextWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    lineHeight: 1
   },
   profileBox: {
     padding: '1.25rem 1.5rem',
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    backgroundColor: 'transparent',
     borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
   },
   avatar: {
@@ -231,7 +242,7 @@ const styles = {
   footer: {
     padding: '1.25rem 1.5rem',
     borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'transparent',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem'

@@ -19,9 +19,20 @@ create table public.users (
     id uuid references auth.users on delete cascade primary key,
     full_name text not null,
     phone text,
-    role text not null check (role in ('admin', 'teacher', 'student')),
+    role text not null check (role in ('admin', 'teacher', 'student', 'data_entry')),
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Create is_data_entry helper function
+create or replace function public.is_data_entry()
+returns boolean as $$
+begin
+    return exists (
+        select 1 from public.users u 
+        where u.id = auth.uid() and u.role = 'data_entry'
+    );
+end;
+$$ language plpgsql security definer;
 
 -- Enable RLS for users
 alter table public.users enable row level security;
@@ -36,6 +47,15 @@ on public.users for all using (
         where u.id = auth.uid() and u.role = 'admin'
     )
 );
+
+create policy "Allow data_entry insert users" 
+on public.users for insert 
+with check (public.is_data_entry());
+
+create policy "Allow data_entry update users" 
+on public.users for update 
+using (public.is_data_entry())
+with check (public.is_data_entry());
 
 -- 2. STUDENTS TABLE
 create table public.students (
@@ -61,6 +81,15 @@ on public.students for all using (
     )
 );
 
+create policy "Allow data_entry insert students" 
+on public.students for insert 
+with check (public.is_data_entry());
+
+create policy "Allow data_entry update students" 
+on public.students for update 
+using (public.is_data_entry())
+with check (public.is_data_entry());
+
 -- 3. TEACHERS TABLE
 create table public.teachers (
     id uuid default uuid_generate_v4() primary key,
@@ -84,6 +113,15 @@ on public.teachers for all using (
         where users.id = auth.uid() and users.role = 'admin'
     )
 );
+
+create policy "Allow data_entry insert teachers" 
+on public.teachers for insert 
+with check (public.is_data_entry());
+
+create policy "Allow data_entry update teachers" 
+on public.teachers for update 
+using (public.is_data_entry())
+with check (public.is_data_entry());
 
 -- 4. COURSES TABLE
 create table public.courses (
@@ -130,6 +168,15 @@ on public.attendance for all using (
     )
 );
 
+create policy "Allow data_entry insert attendance" 
+on public.attendance for insert 
+with check (public.is_data_entry());
+
+create policy "Allow data_entry update attendance" 
+on public.attendance for update 
+using (public.is_data_entry())
+with check (public.is_data_entry());
+
 -- 6. FEES TABLE (Billing invoices)
 create table public.fees (
     id uuid default uuid_generate_v4() primary key,
@@ -153,6 +200,15 @@ on public.fees for all using (
     )
 );
 
+create policy "Allow data_entry insert fees" 
+on public.fees for insert 
+with check (public.is_data_entry());
+
+create policy "Allow data_entry update fees" 
+on public.fees for update 
+using (public.is_data_entry())
+with check (public.is_data_entry());
+
 -- 7. FEE_PAYMENTS TABLE
 create table public.fee_payments (
     id uuid default uuid_generate_v4() primary key,
@@ -175,6 +231,15 @@ on public.fee_payments for all using (
         where users.id = auth.uid() and users.role = 'admin'
     )
 );
+
+create policy "Allow data_entry insert fee_payments" 
+on public.fee_payments for insert 
+with check (public.is_data_entry());
+
+create policy "Allow data_entry update fee_payments" 
+on public.fee_payments for update 
+using (public.is_data_entry())
+with check (public.is_data_entry());
 
 -- 8. DONATIONS TABLE
 create table public.donations (
@@ -200,6 +265,15 @@ on public.donations for all using (
     )
 );
 
+create policy "Allow data_entry insert donations" 
+on public.donations for insert 
+with check (public.is_data_entry());
+
+create policy "Allow data_entry update donations" 
+on public.donations for update 
+using (public.is_data_entry())
+with check (public.is_data_entry());
+
 -- 9. CMS NOTICE BOARD TABLE (Extended notice feature preserved)
 create table public.cms_notices (
     id uuid default uuid_generate_v4() primary key,
@@ -222,3 +296,12 @@ on public.cms_notices for all using (
         where users.id = auth.uid() and users.role = 'admin'
     )
 );
+
+create policy "Allow data_entry insert notices" 
+on public.cms_notices for insert 
+with check (public.is_data_entry());
+
+create policy "Allow data_entry update notices" 
+on public.cms_notices for update 
+using (public.is_data_entry())
+with check (public.is_data_entry());

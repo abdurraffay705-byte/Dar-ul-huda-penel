@@ -21,11 +21,29 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const routeRoles = {
+    '/dashboard': ['admin', 'teacher', 'student'],
+    '/users': ['admin'],
+    '/students': ['admin', 'teacher', 'student', 'data_entry'],
+    '/teachers': ['admin', 'teacher', 'data_entry'],
+    '/courses': ['admin', 'teacher', 'student'],
+    '/attendance': ['admin', 'teacher', 'data_entry'],
+    '/fees': ['admin', 'student', 'data_entry'],
+    '/donations': ['admin', 'data_entry'],
+    '/cms': ['admin', 'teacher', 'student', 'data_entry'],
+    '/settings': ['admin']
+  };
+
+  function getDefaultTabForRole(role) {
+    const normRole = role?.toLowerCase().replace(/[- ]/g, '_') || '';
+    if (normRole === 'teacher') return 'students';
+    if (normRole === 'student') return 'fees';
+    if (normRole === 'data_entry') return 'students';
+    return 'dashboard';
+  }
+
   function setDefaultTabForRole(role) {
-    let defaultTab = 'dashboard';
-    if (role === 'teacher') defaultTab = 'students';
-    else if (role === 'student') defaultTab = 'fees';
-    setActiveTab(defaultTab);
+    setActiveTab(getDefaultTabForRole(role));
   }
 
   useEffect(() => {
@@ -102,7 +120,7 @@ export default function App() {
             authLoading ? (
               <div style={styles.loadingScreen}>Checking your session...</div>
             ) : user ? (
-              <Navigate to={`/${activeTab}`} replace />
+              <Navigate to={`/${getDefaultTabForRole(user.role)}`} replace />
             ) : (
               <Login onLogin={handleLogin} />
             )
@@ -110,20 +128,29 @@ export default function App() {
         />
 
         {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route 
+          path="/" 
+          element={
+            user ? (
+              <Navigate to={`/${getDefaultTabForRole(user.role)}`} replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
 
         {/* Protected module routes — all top-level with absolute paths */}
         {[
           { path: '/dashboard', element: <DashboardHome setActiveTab={setActiveTab} /> },
-          { path: '/students',  element: <StudentsModule  userRole={user?.role} /> },
-          { path: '/teachers',  element: <TeachersModule  userRole={user?.role} /> },
-          { path: '/users',     element: <UsersModule     userRole={user?.role} /> },
-          { path: '/fees',      element: <FeesModule      userRole={user?.role} /> },
-          { path: '/attendance',element: <AttendanceModule userRole={user?.role} /> },
+          { path: '/students', element: <StudentsModule userRole={user?.role} user={user} /> },
+          { path: '/teachers', element: <TeachersModule userRole={user?.role} /> },
+          { path: '/users', element: <UsersModule userRole={user?.role} /> },
+          { path: '/fees', element: <FeesModule userRole={user?.role} /> },
+          { path: '/attendance', element: <AttendanceModule userRole={user?.role} user={user} /> },
           { path: '/donations', element: <DonationsModule userRole={user?.role} /> },
-          { path: '/cms',       element: <CMSModule       userRole={user?.role} /> },
-          { path: '/courses',   element: <CoursesModule   userRole={user?.role} /> },
-          { path: '/settings',  element: <SettingsModule /> },
+          { path: '/cms', element: <CMSModule userRole={user?.role} /> },
+          { path: '/courses', element: <CoursesModule userRole={user?.role} /> },
+          { path: '/settings', element: <SettingsModule /> },
         ].map(({ path, element }) => (
           <Route
             key={path}
@@ -132,55 +159,71 @@ export default function App() {
               authLoading ? (
                 <div style={styles.loadingScreen}>Checking your session...</div>
               ) : user ? (
-                <div style={styles.appContainer}>
-                  {/* SIDEBAR FOR DESKTOP SCREEN */}
-                  <div style={styles.desktopSidebar}>
-                    <Sidebar
-                      activeTab={activeTab}
-                      setActiveTab={setActiveTab}
-                      user={user}
-                      onLogout={handleLogout}
-                    />
-                  </div>
-
-                  {/* MOBILE HEADER BANNER */}
-                  <header style={styles.mobileHeader} className="no-print">
-                    <button onClick={() => setMobileMenuOpen(true)} style={styles.menuToggle}>
-                      <Menu size={22} color="var(--color-primary)" />
-                    </button>
-                    <span style={styles.mobileTitle} className="brand-title">DAR UL HUDA</span>
-                    <div style={styles.mobileAvatar}>
-                      {user.email.charAt(0).toUpperCase()}
-                    </div>
-                  </header>
-
-                  {/* MOBILE DRAWER SIDEBAR PANEL */}
-                  {mobileMenuOpen && (
-                    <div style={styles.mobileDrawerOverlay} onClick={() => setMobileMenuOpen(false)}>
-                      <div style={styles.mobileDrawer} onClick={(e) => e.stopPropagation()} className="fade-in">
-                        <div style={styles.drawerCloseBar}>
-                          <button onClick={() => setMobileMenuOpen(false)} style={styles.menuCloseBtn}>
-                            <X size={22} />
-                          </button>
-                        </div>
+                // Verify route access
+                (() => {
+                  const norm = user.role?.toLowerCase().replace(/[- ]/g, '_') || '';
+                  const allowed = routeRoles[path] || [];
+                  if (!allowed.includes(norm)) {
+                    return <Navigate to={`/${getDefaultTabForRole(user.role)}`} replace />;
+                  }
+                  return (
+                    <div style={styles.appContainer}>
+                      {/* SIDEBAR FOR DESKTOP SCREEN */}
+                      <div style={styles.desktopSidebar}>
                         <Sidebar
                           activeTab={activeTab}
-                          setActiveTab={(tab) => {
-                            setActiveTab(tab);
-                            setMobileMenuOpen(false);
-                          }}
+                          setActiveTab={setActiveTab}
                           user={user}
                           onLogout={handleLogout}
                         />
                       </div>
-                    </div>
-                  )}
 
-                  {/* MAIN CONTENT WORKSPACE VIEWPORT */}
-                  <main style={styles.mainContent}>
-                    {element}
-                  </main>
-                </div>
+                      {/* MOBILE HEADER BANNER */}
+                      <header style={styles.mobileHeader} className="no-print">
+                        <button onClick={() => setMobileMenuOpen(true)} style={styles.menuToggle}>
+                          <Menu size={22} color="var(--color-primary)" />
+                        </button>
+                        <span style={styles.mobileTitle}>DAR UL HUDA</span>
+                        <div style={styles.mobileAvatar}>
+                          {user.email.charAt(0).toUpperCase()}
+                        </div>
+                      </header>
+
+                      {/* MOBILE DRAWER SIDEBAR PANEL */}
+                      {mobileMenuOpen && (
+                        <div style={styles.mobileDrawerOverlay} onClick={() => setMobileMenuOpen(false)}>
+                          <div style={styles.mobileDrawer} onClick={(e) => e.stopPropagation()} className="fade-in">
+                            {/* Close button inside drawer at top-right */}
+                            <div style={styles.drawerCloseBar}>
+                              <button onClick={() => setMobileMenuOpen(false)} style={styles.menuCloseBtn} className="btn-icon-only" aria-label="Close menu">
+                                <X size={20} />
+                              </button>
+                            </div>
+                            {/* Scrollable sidebar content */}
+                            <div style={styles.drawerInner} className="drawer-inner">
+                              <Sidebar
+                                activeTab={activeTab}
+                                setActiveTab={(tab) => {
+                                  setActiveTab(tab);
+                                  setMobileMenuOpen(false);
+                                }}
+                                user={user}
+                                onLogout={handleLogout}
+                              />
+                            </div>
+                          </div>
+                          {/* Tap outside area to close */}
+                          <div style={styles.drawerDismissArea} onClick={() => setMobileMenuOpen(false)} />
+                        </div>
+                      )}
+
+                      {/* MAIN CONTENT WORKSPACE VIEWPORT */}
+                      <main style={styles.mainContent}>
+                        {element}
+                      </main>
+                    </div>
+                  );
+                })()
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -238,7 +281,11 @@ const styles = {
   },
   mobileTitle: {
     fontSize: '1.2rem',
-    letterSpacing: '0.05em'
+    letterSpacing: '0.05em',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    color: '#daba53',
+    WebkitTextFillColor: '#daba53'
   },
   mobileAvatar: {
     width: '32px',
@@ -259,33 +306,49 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     zIndex: 1000,
-    display: 'flex'
+    display: 'flex',
+    alignItems: 'stretch'
   },
   mobileDrawer: {
     position: 'relative',
     height: '100%',
-    width: '270px'
+    width: '270px',
+    backgroundColor: '#04382b',
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    boxShadow: '4px 0 20px rgba(0,0,0,0.4)'
+  },
+  drawerInner: {
+    flex: 1,
+    overflowY: 'auto',
+    overflowX: 'hidden'
+  },
+  drawerDismissArea: {
+    flex: 1,
+    cursor: 'pointer'
   },
   drawerCloseBar: {
-    position: 'absolute',
-    top: '1.25rem',
-    right: '-45px',
-    zIndex: 1001
+    display: 'flex',
+    justifyContent: 'flex-end',
+    padding: '0.75rem 0.75rem 0 0.75rem',
+    flexShrink: 0
   },
   menuCloseBtn: {
-    background: 'rgba(4, 56, 43, 0.85)',
+    background: 'rgba(255,255,255,0.12)',
     color: '#fff',
-    border: 'none',
-    borderRadius: '50%',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: '8px',
     width: '36px',
     height: '36px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+    flexShrink: 0
   },
   mainContent: {
     flex: 1,
@@ -309,11 +372,6 @@ const responsiveStyles = `
   }
   header {
     display: flex !important;
-  }
-}
-@media (min-width: 993px) {
-  main {
-    margin-left: 270px !important;
   }
 }
 `;

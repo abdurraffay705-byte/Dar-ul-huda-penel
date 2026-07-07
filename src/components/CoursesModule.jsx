@@ -100,8 +100,10 @@ export default function CoursesModule({ userRole }) {
   const isEditable = userRole === 'admin';
 
   return (
-    <div className="fade-in">
-      <h1 className="section-title"><BookOpen size={24} color="var(--color-accent)" /> Courses & Curriculum</h1>
+    <>
+      {!isFormOpen && (
+        <div className="fade-in">
+      <h1 className="section-title">Courses Registry</h1>
 
       {/* FILTER & ACTIONS BAR */}
       <div style={styles.filterBar} className="glass-panel">
@@ -162,14 +164,16 @@ export default function CoursesModule({ userRole }) {
           ))}
         </div>
       )}
+      </div>
+      )}
 
       {/* ADD / EDIT COURSE MODAL */}
       {isFormOpen && (
-        <div style={styles.modalOverlay}>
+        <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in" style={styles.modalCard}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>{editingCourse ? 'Edit Course Details' : 'Create New Course'}</h3>
-              <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn}>
+              <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
             </div>
@@ -225,7 +229,7 @@ export default function CoursesModule({ userRole }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -312,7 +316,6 @@ const styles = {
   },
   editBtn: {
     flex: 1,
-    padding: '0.4rem',
     fontSize: '0.8rem',
     justifyContent: 'center'
   },

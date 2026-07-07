@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { database } from '../supabaseClient';
+import { database, supabase } from '../supabaseClient';
 import { CheckSquare, Calendar, UserCheck, Search, Info, Trash2 } from 'lucide-react';
 
-export default function AttendanceModule({ userRole }) {
+export default function AttendanceModule({ userRole, user }) {
   const [activeTab, setActiveTab] = useState('student'); // 'student' | 'teacher' | 'reports'
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState('Grade 1');
@@ -82,13 +82,26 @@ export default function AttendanceModule({ userRole }) {
 
   const handleStatusChange = (userId, status) => {
     setAttendanceSheet(prev => 
-      prev.map(row => row.id === userId ? { ...row, status: status.toLowerCase() } : row)
+      prev.map(row => {
+        if (row.id === userId) {
+          if (isStatusDisabled(row)) {
+            return row;
+          }
+          return { ...row, status: status.toLowerCase() };
+        }
+        return row;
+      })
     );
   };
 
   const handleBulkMark = (status) => {
     setAttendanceSheet(prev => 
-      prev.map(row => ({ ...row, status: status.toLowerCase() }))
+      prev.map(row => {
+        if (isStatusDisabled(row)) {
+          return row;
+        }
+        return { ...row, status: status.toLowerCase() };
+      })
     );
   };
 
@@ -207,66 +220,117 @@ export default function AttendanceModule({ userRole }) {
     row.roll_no.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const isEditable = userRole === 'admin' || userRole === 'teacher';
+  const [teacherSubject, setTeacherSubject] = useState('');
+
+  useEffect(() => {
+    async function fetchTeacherSubject() {
+      const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+      if (norm === 'teacher' && user?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('teachers')
+            .select('subject')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (data) {
+            setTeacherSubject(data.subject);
+          }
+        } catch (e) {
+          console.error("Error fetching teacher subject:", e);
+        }
+      }
+    }
+    fetchTeacherSubject();
+  }, [userRole, user]);
+
+  const isStatusDisabled = (row) => {
+    const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+    if (norm === 'admin') return false;
+    if (norm === 'data_entry') {
+      return false;
+    }
+    if (norm === 'teacher') {
+      if (activeTab === 'student') {
+        return !(selectedClass && teacherSubject && (
+          selectedClass.toLowerCase().includes(teacherSubject.toLowerCase()) ||
+          teacherSubject.toLowerCase().includes(selectedClass.toLowerCase())
+        ));
+      } else {
+        return row.id !== user?.id;
+      }
+    }
+    return true;
+  };
+
+  const isEditable = (userRole?.toLowerCase().replace(/[- ]/g, '_') || '') === 'admin';
+  const isRosterHidden = !loading && totalRoster === 0;
+  const isReportEmpty = !reportLoading && reportLogs.length === 0;
 
   return (
     <div className="fade-in">
-      <h1 className="section-title"><CheckSquare size={24} color="var(--color-accent)" /> Attendance Management</h1>
+      <h1 className="section-title">Attendance Ledger</h1>
 
       {/* DOUBLE TAB MENU */}
-      <div style={styles.tabContainer}>
+      <div className="attendance-tabs">
         <button 
           onClick={() => { setActiveTab('student'); setSearchTerm(''); }}
-          style={{ ...styles.tabBtn, ...(activeTab === 'student' ? styles.tabBtnActive : {}) }}
+          className={`attendance-tab-btn ${activeTab === 'student' ? 'active' : ''}`}
         >
           Students Attendance
         </button>
         <button 
           onClick={() => { setActiveTab('teacher'); setSearchTerm(''); }}
-          style={{ ...styles.tabBtn, ...(activeTab === 'teacher' ? styles.tabBtnActive : {}) }}
+          className={`attendance-tab-btn ${activeTab === 'teacher' ? 'active' : ''}`}
         >
           Teachers & Staff Attendance
         </button>
         <button 
           onClick={() => { setActiveTab('reports'); setSearchTerm(''); }}
-          style={{ ...styles.tabBtn, ...(activeTab === 'reports' ? styles.tabBtnActive : {}) }}
+          className={`attendance-tab-btn ${activeTab === 'reports' ? 'active' : ''}`}
         >
           History & Reports
         </button>
       </div>
 
       {activeTab === 'reports' ? (
-        <div style={styles.sheetContainer} className="glass-panel">
-          <h3 style={{ ...styles.sheetTitle, marginBottom: '1.25rem' }}>Attendance History & Reports</h3>
+        <div style={isReportEmpty ? {} : styles.sheetContainer} className={isReportEmpty ? "" : "glass-panel"}>
+          {!isReportEmpty && (
+            <h3 style={{ ...styles.sheetTitle, marginBottom: '1.25rem' }}>Attendance History & Reports</h3>
+          )}
           
-          <div style={styles.configBar} className="glass-panel">
+          <div 
+            style={isReportEmpty ? styles.configBarExpanded : styles.configBar} 
+            className="glass-panel filter-bar"
+          >
+            {isReportEmpty && (
+              <h3 style={{ ...styles.sheetTitle, borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                <Search size={18} color="var(--color-primary-light)" /> Attendance History & Reports Query
+              </h3>
+            )}
+
             <div style={styles.configItem}>
               <label style={styles.configLabel}>Role Filter</label>
               <select
                 value={reportRole}
                 onChange={(e) => setReportRole(e.target.value)}
-                style={styles.configInput}
+                style={isReportEmpty ? styles.configInputExpanded : styles.configInput}
               >
-                <option value="student">Student</option>
-                <option value="teacher">Teacher / Staff</option>
+                <option value="student">Student Registry</option>
+                <option value="teacher">Teachers & Staff</option>
               </select>
             </div>
 
-            <div style={styles.configItem}>
-              <label style={styles.configLabel}>Select Person</label>
+            <div style={isReportEmpty ? styles.configItem : { ...styles.configItem, flex: 1 }}>
+              <label style={styles.configLabel}>Select Person Profile</label>
               <select
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
-                style={styles.configInput}
-                disabled={people.length === 0}
+                style={isReportEmpty ? styles.configInputExpanded : styles.configInput}
+                disabled={reportLoading}
               >
-                {people.length === 0 ? (
-                  <option value="">No registry found</option>
-                ) : (
-                  people.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.details})</option>
-                  ))
-                )}
+                {people.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.details})</option>
+                ))}
               </select>
             </div>
 
@@ -276,7 +340,7 @@ export default function AttendanceModule({ userRole }) {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                style={styles.configInput}
+                style={isReportEmpty ? styles.configInputExpanded : styles.configInput}
               />
             </div>
 
@@ -286,17 +350,17 @@ export default function AttendanceModule({ userRole }) {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                style={styles.configInput}
+                style={isReportEmpty ? styles.configInputExpanded : styles.configInput}
               />
             </div>
 
             <button 
-              onClick={handleRunReport} 
-              className="btn-accent" 
-              style={{ marginTop: 'auto', padding: '0.45rem 1.25rem', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              disabled={reportLoading || !selectedUserId}
+              onClick={handleRunReport}
+              disabled={reportLoading}
+              className="btn-primary"
+              style={isReportEmpty ? { width: '100%', marginTop: '0.5rem', justifyContent: 'center' } : { alignSelf: 'flex-end' }}
             >
-              Generate Report
+              Run Report Ledger
             </button>
           </div>
 
@@ -305,52 +369,61 @@ export default function AttendanceModule({ userRole }) {
               <div className="spinner" style={styles.spinner}></div>
               <p style={{ marginTop: 10 }}>Querying ledger logs...</p>
             </div>
-          ) : reportLogs.length === 0 ? (
-            <div style={styles.noData}>No records found for the selected criteria and date range.</div>
           ) : (
-            <div className="table-container" style={{ marginTop: '1.5rem' }}>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Attendance Status</th>
-                    {isEditable && <th style={{ textAlign: 'right' }}>Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td style={{ fontWeight: '600', color: 'var(--color-primary-light)' }}>{log.date}</td>
-                      <td>
-                        <span className={`badge ${log.status === 'present' ? 'success' : (log.status === 'absent' ? 'danger' : 'warning')}`}>
-                          {log.status}
-                        </span>
-                      </td>
-                      {isEditable && (
-                        <td style={{ textAlign: 'right' }}>
-                          <button onClick={() => handleDeleteReportLog(log.id)} style={styles.deleteBtn} title="Delete record">
-                            <Trash2 size={14} /> Delete
-                          </button>
-                        </td>
-                      )}
+            reportLogs.length > 0 && (
+              <div className="table-container" style={{ marginTop: '1.5rem' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Attendance Status</th>
+                      {isEditable && <th style={{ textAlign: 'right' }}>Actions</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {reportLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td style={{ fontWeight: '600', color: 'var(--color-primary-light)' }}>{log.date}</td>
+                        <td>
+                          <span className={`badge ${log.status === 'present' ? 'success' : (log.status === 'absent' ? 'danger' : 'warning')}`}>
+                            {log.status}
+                          </span>
+                        </td>
+                        {isEditable && (
+                          <td style={{ textAlign: 'right' }}>
+                            <button onClick={() => handleDeleteReportLog(log.id)} style={styles.deleteBtn} title="Delete record">
+                              <Trash2 size={14} /> Delete
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
           )}
         </div>
       ) : (
         <>
           {/* ATTENDANCE CONFIGURATION BOARD */}
-          <div style={styles.configBar} className="glass-panel">
+          <div 
+            style={isRosterHidden ? styles.configBarExpanded : styles.configBar} 
+            className="glass-panel filter-bar"
+          >
+            {isRosterHidden && (
+              <h3 style={{ ...styles.sheetTitle, borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                <Search size={18} color="var(--color-primary-light)" /> Attendance Ledger Query
+              </h3>
+            )}
+            
             <div style={styles.configItem}>
               <label style={styles.configLabel}><Calendar size={14} style={{ marginRight: 4 }} /> Date Ledger</label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                style={styles.configInput}
+                style={isRosterHidden ? styles.configInputExpanded : styles.configInput}
               />
             </div>
 
@@ -360,7 +433,7 @@ export default function AttendanceModule({ userRole }) {
                 <select
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
-                  style={styles.configInput}
+                  style={isRosterHidden ? styles.configInputExpanded : styles.configInput}
                 >
                   <option value="Grade 1">Grade 1</option>
                   <option value="Grade 2">Grade 2</option>
@@ -373,21 +446,21 @@ export default function AttendanceModule({ userRole }) {
               </div>
             )}
 
-            <div style={{ ...styles.configItem, flex: 1, minWidth: '180px' }}>
+            <div style={isRosterHidden ? styles.configItem : { ...styles.configItem, flex: 1, minWidth: '180px' }}>
               <label style={styles.configLabel}><Search size={14} style={{ marginRight: 4 }} /> Search Registry</label>
               <input
                 type="text"
                 placeholder="Search by name, roll/employee id..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={styles.configInput}
+                style={isRosterHidden ? styles.configInputExpanded : styles.configInput}
               />
             </div>
           </div>
 
           {/* QUICK ATTENDANCE STATS BANNER */}
           {!loading && totalRoster > 0 && (
-            <div style={styles.statsBanner} className="glass-panel">
+            <div className="attendance-stats-banner glass-panel">
               <div style={styles.statMetric}>
                 <span style={styles.statMetricLabel}>Total Registered</span>
                 <span style={styles.statMetricValue}>{totalRoster}</span>
@@ -412,96 +485,107 @@ export default function AttendanceModule({ userRole }) {
           )}
 
           {/* RAPID CHECKMARK INTERFACE */}
-          <div style={styles.sheetContainer} className="glass-panel">
-            <div style={styles.bulkRow}>
-              <h3 style={styles.sheetTitle}>Marking Ledger Roster</h3>
-              <div style={styles.bulkActions}>
-                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500' }}>Bulk Fill:</span>
-                <button onClick={() => handleBulkMark('present')} style={styles.bulkBtnGreen}>Mark Present</button>
-                <button onClick={() => handleBulkMark('absent')} style={styles.bulkBtnRed}>Mark Absent</button>
+          {(loading || totalRoster > 0) && (
+            <div style={styles.sheetContainer} className="glass-panel">
+              <div style={styles.bulkRow}>
+                <h3 style={styles.sheetTitle}>Marking Ledger Roster</h3>
+                <div style={styles.bulkActions}>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500' }}>Bulk Fill:</span>
+                  <button onClick={() => handleBulkMark('present')} style={styles.bulkBtnGreen}>Mark Present</button>
+                  <button onClick={() => handleBulkMark('absent')} style={styles.bulkBtnRed}>Mark Absent</button>
+                </div>
               </div>
+
+              {loading ? (
+                <div style={styles.innerLoader}>
+                  <div className="spinner" style={styles.spinner}></div>
+                  <p style={{ marginTop: 10 }}>Fetching daily check sheets...</p>
+                </div>
+              ) : filteredSheet.length === 0 ? (
+                <div style={styles.noData}>No active records registered under current settings.</div>
+              ) : (
+                <div style={styles.gridList}>
+                  {filteredSheet.map((row) => (
+                    <div key={row.id} style={styles.gridRow}>
+                      <div style={styles.rowBio}>
+                        <span style={styles.rowRoll}>{row.roll_no}</span>
+                        <span style={styles.rowName}>{row.name}</span>
+                      </div>
+
+                      {/* STATUS BUTTON GROUP */}
+                      <div style={styles.btnGroup}>
+                        <button
+                          onClick={() => handleStatusChange(row.id, 'present')}
+                          disabled={isStatusDisabled(row)}
+                          style={{
+                            ...styles.statusBtn,
+                            backgroundColor: row.status === 'present' ? 'var(--color-success)' : '#fff',
+                            color: row.status === 'present' ? '#fff' : '#475569',
+                            borderColor: row.status === 'present' ? 'var(--color-success)' : 'var(--color-border)',
+                            opacity: isStatusDisabled(row) ? 0.6 : 1,
+                            cursor: isStatusDisabled(row) ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Present
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(row.id, 'absent')}
+                          disabled={isStatusDisabled(row)}
+                          style={{
+                            ...styles.statusBtn,
+                            backgroundColor: row.status === 'absent' ? 'var(--color-danger)' : '#fff',
+                            color: row.status === 'absent' ? '#fff' : '#475569',
+                            borderColor: row.status === 'absent' ? 'var(--color-danger)' : 'var(--color-border)',
+                            opacity: isStatusDisabled(row) ? 0.6 : 1,
+                            cursor: isStatusDisabled(row) ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Absent
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(row.id, 'late')}
+                          disabled={isStatusDisabled(row)}
+                          style={{
+                            ...styles.statusBtn,
+                            backgroundColor: row.status === 'late' ? 'var(--color-warning)' : '#fff',
+                            color: row.status === 'late' ? '#fff' : '#475569',
+                            borderColor: row.status === 'late' ? 'var(--color-warning)' : 'var(--color-border)',
+                            opacity: isStatusDisabled(row) ? 0.6 : 1,
+                            cursor: isStatusDisabled(row) ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Late
+                        </button>
+                      </div>
+
+                      {isEditable && row.attendanceId && (
+                        <button
+                          onClick={() => handleDeleteSheetRecord(row.attendanceId, row.id)}
+                          style={styles.deleteBtn}
+                          className="btn-icon-only"
+                          title="Delete saved record"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {totalRoster > 0 && !loading && (
+                <div style={styles.sheetFooter}>
+                  <button 
+                    onClick={handleSave} 
+                    disabled={saving} 
+                    className="btn-accent"
+                  >
+                    <UserCheck size={18} /> {saving ? 'Writing Database...' : 'Save & Publish Ledger'}
+                  </button>
+                </div>
+              )}
             </div>
-
-            {loading ? (
-              <div style={styles.innerLoader}>
-                <div className="spinner" style={styles.spinner}></div>
-                <p style={{ marginTop: 10 }}>Fetching daily check sheets...</p>
-              </div>
-            ) : filteredSheet.length === 0 ? (
-              <div style={styles.noData}>No active records registered under current settings.</div>
-            ) : (
-              <div style={styles.gridList}>
-                {filteredSheet.map((row) => (
-                  <div key={row.id} style={styles.gridRow}>
-                    <div style={styles.rowBio}>
-                      <span style={styles.rowRoll}>{row.roll_no}</span>
-                      <span style={styles.rowName}>{row.name}</span>
-                    </div>
-
-                    {/* STATUS BUTTON GROUP */}
-                    <div style={styles.btnGroup}>
-                      <button
-                        onClick={() => handleStatusChange(row.id, 'present')}
-                        style={{
-                          ...styles.statusBtn,
-                          backgroundColor: row.status === 'present' ? 'var(--color-success)' : '#fff',
-                          color: row.status === 'present' ? '#fff' : '#475569',
-                          borderColor: row.status === 'present' ? 'var(--color-success)' : 'var(--color-border)'
-                        }}
-                      >
-                        Present
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(row.id, 'absent')}
-                        style={{
-                          ...styles.statusBtn,
-                          backgroundColor: row.status === 'absent' ? 'var(--color-danger)' : '#fff',
-                          color: row.status === 'absent' ? '#fff' : '#475569',
-                          borderColor: row.status === 'absent' ? 'var(--color-danger)' : 'var(--color-border)'
-                        }}
-                      >
-                        Absent
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(row.id, 'late')}
-                        style={{
-                          ...styles.statusBtn,
-                          backgroundColor: row.status === 'late' ? 'var(--color-warning)' : '#fff',
-                          color: row.status === 'late' ? '#fff' : '#475569',
-                          borderColor: row.status === 'late' ? 'var(--color-warning)' : 'var(--color-border)'
-                        }}
-                      >
-                        Late
-                      </button>
-                    </div>
-
-                    {isEditable && row.attendanceId && (
-                      <button
-                        onClick={() => handleDeleteSheetRecord(row.attendanceId, row.id)}
-                        style={styles.deleteBtn}
-                        title="Delete saved record"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {totalRoster > 0 && !loading && (
-              <div style={styles.sheetFooter}>
-                <button 
-                  onClick={handleSave} 
-                  disabled={saving} 
-                  className="btn-accent"
-                  style={{ padding: '0.75rem 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <UserCheck size={18} /> {saving ? 'Writing Database...' : 'Save & Publish Ledger'}
-                </button>
-              </div>
-            )}
-          </div>
+          )}
         </>
       )}
     </div>
@@ -516,7 +600,6 @@ const styles = {
     marginBottom: '1.5rem'
   },
   tabBtn: {
-    padding: '0.75rem 1.5rem',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
@@ -531,10 +614,10 @@ const styles = {
     borderBottomColor: 'var(--color-primary)'
   },
   configBar: {
-    padding: '1.25rem',
+    padding: '1.5rem',
     display: 'flex',
     alignItems: 'center',
-    gap: '1.5rem',
+    gap: '1.25rem',
     marginBottom: '1.5rem',
     backgroundColor: '#fff',
     flexWrap: 'wrap'
@@ -560,18 +643,28 @@ const styles = {
     backgroundColor: '#fff',
     minWidth: '160px'
   },
-  statsBanner: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: '1rem',
-    padding: '1rem 1.5rem',
-    backgroundColor: '#fff',
+  configBarExpanded: {
+    padding: '2rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: '1.25rem',
     marginBottom: '1.5rem',
-    textAlign: 'center',
-    '@media (max-width: 600px)': {
-      gridTemplateColumns: 'repeat(2, 1fr)'
-    }
+    backgroundColor: '#fff',
+    borderRadius: 'var(--radius-md)',
+    boxShadow: 'var(--shadow-md)',
+    width: '100%'
   },
+  configInputExpanded: {
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '0.65rem 1rem',
+    fontSize: '0.9rem',
+    outline: 'none',
+    backgroundColor: '#fff',
+    width: '100%'
+  },
+  // Styles moved to .attendance-stats-banner in index.css
   statMetric: {
     display: 'flex',
     flexDirection: 'column'
@@ -611,7 +704,6 @@ const styles = {
     gap: '0.5rem'
   },
   bulkBtnGreen: {
-    padding: '0.3rem 0.6rem',
     fontSize: '0.75rem',
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
     color: 'var(--color-success)',
@@ -622,7 +714,6 @@ const styles = {
     transition: 'all 0.15s'
   },
   bulkBtnRed: {
-    padding: '0.3rem 0.6rem',
     fontSize: '0.75rem',
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     color: 'var(--color-danger)',
@@ -670,7 +761,6 @@ const styles = {
     flexWrap: 'wrap'
   },
   statusBtn: {
-    padding: '0.4rem 0.8rem',
     fontSize: '0.8rem',
     fontWeight: '600',
     border: '1px solid',
@@ -709,7 +799,6 @@ const styles = {
     backgroundColor: '#fff'
   },
   deleteBtn: {
-    padding: '0.35rem 0.6rem',
     fontSize: '0.78rem',
     backgroundColor: 'rgba(239, 68, 68, 0.08)',
     color: 'var(--color-danger)',

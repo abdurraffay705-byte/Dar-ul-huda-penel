@@ -21,9 +21,7 @@ export default function SettingsModule() {
 
   return (
     <div className="fade-in" style={styles.container}>
-      <h1 className="section-title">
-        <Settings size={24} color="var(--color-accent)" /> Settings
-      </h1>
+      <h1 className="section-title">Supabase Settings</h1>
 
       <div style={styles.settingsGrid}>
         {/* CONNECTION STATUS */}

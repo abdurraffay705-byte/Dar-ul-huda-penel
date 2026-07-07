@@ -150,15 +150,19 @@ export default function TeachersModule({ userRole }) {
     return matchesSearch && matchesSubject;
   });
 
-  const isEditable = userRole === 'admin';
+  const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+  const isEditable = norm === 'admin';
+  const canAdd = norm === 'admin' || norm === 'data_entry';
 
   return (
-    <div className="fade-in">
-      <h1 className="section-title"><UserPlus size={24} color="var(--color-accent)" /> Instructors Registry</h1>
+    <>
+      {!isFormOpen && (
+        <div className="fade-in">
+      <h1 className="section-title">Teachers Registry</h1>
 
       {/* FILTER & ACTIONS BAR */}
-      <div style={styles.filterBar} className="glass-panel">
-        <div style={styles.searchBox}>
+      <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredTeachers.length === 0 ? 'configBarExpanded' : ''}`}>
+        <div style={styles.searchBox} className="filter-bar__search">
           <Search size={16} color="#64748b" />
           <input
             type="text"
@@ -169,7 +173,7 @@ export default function TeachersModule({ userRole }) {
           />
         </div>
 
-        <div style={styles.filtersGroup}>
+        <div style={styles.filtersGroup} className="filter-bar__controls">
           <select 
             value={subjectFilter} 
             onChange={(e) => setSubjectFilter(e.target.value)} 
@@ -183,7 +187,7 @@ export default function TeachersModule({ userRole }) {
             <option value="English Language">English Language</option>
           </select>
 
-          {isEditable && (
+          {canAdd && (
             <button onClick={handleOpenCreateForm} className="btn-primary">
               <UserPlus size={16} /> Appoint Instructor
             </button>
@@ -192,13 +196,11 @@ export default function TeachersModule({ userRole }) {
       </div>
 
       {/* TEACHERS LIST GRID */}
-      {loading ? (
+      {(!loading && filteredTeachers.length === 0) ? null : loading ? (
         <div style={styles.innerLoader}>
           <div className="spinner" style={styles.spinner}></div>
           <p style={{ marginTop: 10 }}>Loading registries...</p>
         </div>
-      ) : filteredTeachers.length === 0 ? (
-        <div style={styles.noData}>No teachers registered in system.</div>
       ) : (
         <div style={styles.teacherGrid}>
           {filteredTeachers.map((teacher) => (
@@ -241,28 +243,32 @@ export default function TeachersModule({ userRole }) {
                 )}
               </div>
 
-              {isEditable && (
+              {(isEditable || norm === 'data_entry') && (
                 <div style={styles.cardActions}>
                   <button onClick={() => handleOpenEditForm(teacher)} className="btn-secondary" style={styles.editBtn}>
                     <Edit3 size={14} /> Edit Details
                   </button>
-                  <button onClick={() => handleDelete(teacher.id)} style={styles.deleteBtn}>
-                    <Trash2 size={14} /> Remove
-                  </button>
+                  {isEditable && (
+                    <button onClick={() => handleDelete(teacher.id)} style={styles.deleteBtn}>
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           ))}
         </div>
       )}
+      </div>
+      )}
 
       {/* APPOINT / EDIT TEACHER MODAL */}
       {isFormOpen && (
-        <div style={styles.modalOverlay}>
+        <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in" style={styles.modalCard}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>{editingTeacher ? 'Update Instructor Profile' : 'Appoint New Instructor'}</h3>
-              <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn}>
+              <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
             </div>
@@ -383,7 +389,7 @@ export default function TeachersModule({ userRole }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -515,7 +521,6 @@ const styles = {
   },
   editBtn: {
     flex: 1,
-    padding: '0.4rem',
     fontSize: '0.8rem',
     justifyContent: 'center'
   },

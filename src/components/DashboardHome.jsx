@@ -110,7 +110,7 @@ export default function DashboardHome({ setActiveTab }) {
     <div className="fade-in">
       <div style={styles.header}>
         <div>
-          <h1 style={styles.greeting} className="brand-title">Dar ul Huda Dashboard</h1>
+          <h1 style={styles.greeting} className="brand-title">Dashboard</h1>
           <p style={styles.greetingSub}>Islamic Academic Excellence & Governance Portal</p>
         </div>
         <div style={styles.dateBadge}>
@@ -166,7 +166,7 @@ export default function DashboardHome({ setActiveTab }) {
       </div>
 
       {/* DATA VISUALIZATION & LOGS SECTION */}
-      <div style={styles.middleSection}>
+      <div className="dashboard-middle-section">
         {/* PREMIUM SVG CHART CARD */}
         <div className="glass-panel" style={styles.chartCard}>
           <div style={styles.cardHeader}>
@@ -357,15 +357,7 @@ const styles = {
     alignItems: 'center',
     gap: '4px'
   },
-  middleSection: {
-    display: 'grid',
-    gridTemplateColumns: '1.5fr 1fr',
-    gap: '1.5rem',
-    marginBottom: '1.5rem',
-    '@media (max-width: 900px)': {
-      gridTemplateColumns: '1fr'
-    }
-  },
+  // Styles moved to .dashboard-middle-section in index.css
   chartCard: {
     padding: '1.5rem',
     backgroundColor: '#fff',

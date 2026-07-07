@@ -1,18 +1,32 @@
 import { useState, useEffect } from 'react';
-import { database } from '../supabaseClient';
+import { database, supabase } from '../supabaseClient';
 import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, MapPin, Calendar, CheckSquare } from 'lucide-react';
 
-export default function StudentsModule() {
-  const [isDark, setIsDark] = useState(false);
+export default function StudentsModule({ userRole, user }) {
 
-  // Apply dark mode class to body
+  const [teacherSubject, setTeacherSubject] = useState('');
+
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
+    async function fetchTeacherSubject() {
+      const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+      if (norm === 'teacher' && user?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('teachers')
+            .select('subject')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (data) {
+            setTeacherSubject(data.subject);
+          }
+        } catch (e) {
+          console.error("Error fetching teacher subject:", e);
+        }
+      }
     }
-  }, [isDark]);
+    fetchTeacherSubject();
+  }, [userRole, user]);
+
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -148,23 +162,36 @@ export default function StudentsModule() {
   });
 
   const isEditable = true; // Allow editing for all logged-in users
+  const normRole = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+
+  const canEditStudent = (student) => {
+    if (normRole === 'admin') return true;
+    if (normRole === 'student') return true;
+    if (normRole === 'data_entry') return true;
+    if (normRole === 'teacher') {
+      return teacherSubject && (
+        student.class.toLowerCase().includes(teacherSubject.toLowerCase()) || 
+        teacherSubject.toLowerCase().includes(student.class.toLowerCase())
+      );
+    }
+    return false;
+  };
+
+  const canDeleteStudent = () => {
+    if (normRole === 'admin') return true;
+    if (normRole === 'student') return true;
+    return false;
+  };
 
   return (
-    <div className="fade-in" style={styles.container}>
-      {/* Theme toggle button */}
-      <button
-        onClick={() => setIsDark(prev => !prev)}
-        style={styles.themeToggle}
-        aria-label="Toggle dark mode"
-      >
-        {isDark ? '🌞' : '🌙'}
-      </button>
-      <h1 className="section-title"><UserPlus size={24} color="var(--color-accent)" /> Students Roster</h1>
+    <>
+      {!isFormOpen && (
+        <div className="fade-in" style={styles.container}>
+      <h1 className="section-title">Students Roster</h1>
       
       {/* FILTER ACTION BAR */}
-      <div style={styles.filterBar} className="glass-panel">
-        <div style={styles.searchBox}>
-          <Search size={16} color="#64748b" />
+      <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredStudents.length === 0 ? 'configBarExpanded' : ''}`}>
+        <div style={styles.searchBox} className="filter-bar__search">
           <input
             type="text"
             placeholder="Search by student name, roll number, father..."
@@ -174,7 +201,7 @@ export default function StudentsModule() {
           />
         </div>
         
-        <div style={styles.filtersGroup}>
+        <div style={styles.filtersGroup} className="filter-bar__controls">
           <select 
             value={classFilter} 
             onChange={(e) => setClassFilter(e.target.value)} 
@@ -199,6 +226,7 @@ export default function StudentsModule() {
       </div>
 
       {/* DUAL WORKSPACE SPLIT */}
+      {(!loading && filteredStudents.length === 0) ? null : (
       <div style={styles.workspace}>
         {/* ROSTER TABLE */}
         <div style={{ ...styles.tableArea, width: activeStudent ? '60%' : '100%' }}>
@@ -207,8 +235,6 @@ export default function StudentsModule() {
               <div className="spinner" style={styles.spinner}></div>
               <p style={{ marginTop: 10 }}>Loading rosters...</p>
             </div>
-          ) : filteredStudents.length === 0 ? (
-            <div style={styles.noData}>No students match the criteria.</div>
           ) : (
             <div className="table-container">
               <table className="data-table">
@@ -234,19 +260,21 @@ export default function StudentsModule() {
                       <td>{student.father_name}</td>
                       <td>{student.phone || '-'}</td>
                       <td style={styles.actionsCell}>
-                        <button onClick={() => handleViewDetails(student)} style={styles.actionBtn} title="View Profile">
+                        <button onClick={() => handleViewDetails(student)} style={styles.actionBtn} className="btn-icon-only" title="View Profile">
                           <Eye size={15} color="var(--color-primary)" />
                         </button>
-                        {isEditable && (
-                          <>
-                            <button onClick={() => handleOpenEditForm(student)} style={styles.actionBtn} title="Edit Student">
+                        <>
+                          {canEditStudent(student) && (
+                            <button onClick={() => handleOpenEditForm(student)} style={styles.actionBtn} className="btn-icon-only" title="Edit Student">
                               <Edit3 size={15} color="var(--color-accent)" />
                             </button>
-                            <button onClick={() => handleDelete(student.id)} style={styles.actionBtn} title="Delete">
+                          )}
+                          {canDeleteStudent() && (
+                            <button onClick={() => handleDelete(student.id)} style={styles.actionBtn} className="btn-icon-only" title="Delete">
                               <Trash2 size={15} color="var(--color-danger)" />
                             </button>
-                          </>
-                        )}
+                          )}
+                        </>
                       </td>
                     </tr>
                   ))}
@@ -261,7 +289,7 @@ export default function StudentsModule() {
           <div className="glass-panel fade-in" style={styles.profileArea}>
             <div style={styles.profileHeader}>
               <h3 style={styles.profileTitle}>Student Profile Details</h3>
-              <button onClick={() => setActiveStudent(null)} style={styles.closeBtn}>
+              <button onClick={() => setActiveStudent(null)} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
             </div>
@@ -289,7 +317,7 @@ export default function StudentsModule() {
               </div>
               <div style={styles.detailItem}>
                 <span style={styles.detailLabel}>Phone Contact</span>
-                <span style={styles.detailVal}><Phone size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {activeStudent.phone || 'Not Specified'}</span>
+                <span style={styles.detailVal}>{activeStudent.phone || 'Not Specified'}</span>
               </div>
             </div>
 
@@ -298,14 +326,14 @@ export default function StudentsModule() {
             <div style={styles.parentBox}>
               <div style={styles.parentRow}>
                 <span style={styles.parentLabel}>Address:</span>
-                <span style={styles.parentVal}><MapPin size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {activeStudent.address || 'Not Specified'}</span>
+                <span style={styles.parentVal}>{activeStudent.address || 'Not Specified'}</span>
               </div>
             </div>
 
             <hr style={styles.divider} />
 
             {/* AUXILIARY HISTORIES */}
-            <h4 style={styles.subHeading}><CheckSquare size={14} style={{ marginRight: 6 }} /> Billing Invoices</h4>
+            <h4 style={styles.subHeading}>Billing Invoices</h4>
             <div style={styles.auxList}>
               {studentFees.length === 0 ? (
                 <p style={styles.auxEmpty}>No fee invoices logged.</p>
@@ -328,7 +356,7 @@ export default function StudentsModule() {
               )}
             </div>
 
-            <h4 style={styles.subHeading}><Calendar size={14} style={{ marginRight: 6 }} /> Recent Attendance Log</h4>
+            <h4 style={styles.subHeading}>Recent Attendance Log</h4>
             <div style={styles.auxList}>
               {studentAttendance.length === 0 ? (
                 <p style={styles.auxEmpty}>No attendance logged yet.</p>
@@ -346,14 +374,17 @@ export default function StudentsModule() {
           </div>
         )}
       </div>
+      )}
+      </div>
+      )}
 
       {/* ADMIT / EDIT STUDENT FORM */}
       {isFormOpen && (
-        <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in" style={styles.modalCard} aria-live="assertive">
             <div style={styles.modalHeader}>
               <h3 id="modal-title" style={styles.modalTitle}>{editingStudent ? 'Edit Student Profile' : 'Admit New Student'}</h3>
-              <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn} aria-label="Close modal">
+              <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn} className="btn-icon-only" aria-label="Close modal">
                 <X size={18} />
               </button>
             </div>
@@ -449,7 +480,7 @@ export default function StudentsModule() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -457,17 +488,7 @@ const styles = {
   container: {
     padding: '0 0.5rem'
   },
-  themeToggle: {
-    position: 'fixed',
-    top: '1rem',
-    right: '1rem',
-    padding: '0.5rem',
-    cursor: 'pointer',
-    background: 'none',
-    border: 'none',
-    fontSize: '1.5rem',
-    zIndex: 2000
-  },
+
   filterBar: {
     padding: '1.25rem',
     display: 'flex',

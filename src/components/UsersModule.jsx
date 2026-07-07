@@ -110,8 +110,10 @@ export default function UsersModule({ userRole }) {
   };
 
   return (
-    <div className="fade-in">
-      <h1 className="section-title"><UsersIcon size={24} color="var(--color-accent)" /> Users Management</h1>
+    <>
+      {!isFormOpen && (
+        <div className="fade-in">
+      <h1 className="section-title">Users Management</h1>
 
       {/* FILTER & ACTIONS BAR */}
       <div style={styles.filterBar} className="glass-panel">
@@ -195,14 +197,16 @@ export default function UsersModule({ userRole }) {
           ))}
         </div>
       )}
+      </div>
+      )}
 
       {/* ADD / EDIT USER MODAL */}
       {isFormOpen && (
-        <div style={styles.modalOverlay}>
+        <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in" style={styles.modalCard}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>{editingUser ? 'Update User Profile' : 'Add New User'}</h3>
-              <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn}>
+              <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
             </div>
@@ -259,7 +263,7 @@ export default function UsersModule({ userRole }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -396,7 +400,6 @@ const styles = {
   },
   editBtn: {
     flex: 1,
-    padding: '0.4rem',
     fontSize: '0.8rem',
     justifyContent: 'center'
   },

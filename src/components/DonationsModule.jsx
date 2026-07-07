@@ -98,11 +98,15 @@ export default function DonationsModule({ userRole }) {
     return matchesSearch && matchesSource;
   });
 
-  const isEditable = userRole === 'admin';
+  const normRole = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+  const isEditable = normRole === 'admin';
+  const canAddDonation = normRole === 'admin' || normRole === 'data_entry';
 
   return (
-    <div className="fade-in">
-      <h1 className="section-title"><HeartHandshake size={24} color="var(--color-accent)" /> Donation Funds & Campaigns</h1>
+    <>
+      {!isRecordOpen && (
+        <div className="fade-in">
+      <h1 className="section-title">Donation Funds</h1>
 
       {/* CHARITY OVERVIEW CARD */}
       <div style={styles.charityHeader} className="glass-panel">
@@ -113,8 +117,8 @@ export default function DonationsModule({ userRole }) {
             <ShieldCheck size={14} /> 100% Audited Sadaqah & Zakat Ledgers
           </span>
         </div>
-        {isEditable && (
-          <button onClick={() => handleOpenRecord('General Sadqah Fund')} className="btn-accent" style={{ padding: '0.75rem 1.5rem' }}>
+        {canAddDonation && (
+          <button onClick={() => handleOpenRecord('General Sadqah Fund')} className="btn-accent">
             <PlusCircle size={18} /> Record New Donation
           </button>
         )}
@@ -148,7 +152,7 @@ export default function DonationsModule({ userRole }) {
 
               <div style={styles.campFooter}>
                 <span style={styles.pctBadge}>{pct}% Complete</span>
-                {isEditable && (
+                {canAddDonation && (
                   <button onClick={() => handleOpenRecord(camp.key)} style={styles.campDonateBtn}>
                     Log for this
                   </button>
@@ -160,11 +164,13 @@ export default function DonationsModule({ userRole }) {
       </div>
 
       {/* DONOR REGISTRY LEDGER */}
-      <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
+      {(!loading && filteredDonations.length === 0) ? null : (
+        <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
+      )}
 
       {/* SEARCH AND FILTERS */}
-      <div style={styles.filterBar} className="glass-panel">
-        <div style={styles.searchBox}>
+      <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
+        <div style={styles.searchBox} className="filter-bar__search">
           <Search size={16} color="#64748b" />
           <input
             type="text"
@@ -175,7 +181,7 @@ export default function DonationsModule({ userRole }) {
           />
         </div>
 
-        <div style={styles.filtersGroup}>
+        <div style={styles.filtersGroup} className="filter-bar__controls">
           <select 
             value={sourceFilter} 
             onChange={(e) => setSourceFilter(e.target.value)} 
@@ -189,13 +195,11 @@ export default function DonationsModule({ userRole }) {
         </div>
       </div>
 
-      {loading ? (
+      {(!loading && filteredDonations.length === 0) ? null : loading ? (
         <div style={styles.innerLoader}>
           <div className="spinner" style={styles.spinner}></div>
           <p style={{ marginTop: 10 }}>Auditing donor sheets...</p>
         </div>
-      ) : filteredDonations.length === 0 ? (
-        <div style={styles.noData}>No charity logs registered under current settings.</div>
       ) : (
         <div className="table-container">
           <table className="data-table">
@@ -234,14 +238,16 @@ export default function DonationsModule({ userRole }) {
           </table>
         </div>
       )}
+      </div>
+      )}
 
       {/* NEW DONATION MODAL */}
       {isRecordOpen && (
-        <div style={styles.modalOverlay}>
+        <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in" style={styles.modalCard}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Record Sadqah / Zakat Donation</h3>
-              <button onClick={() => setIsRecordOpen(false)} style={styles.closeBtn}>
+              <button onClick={() => setIsRecordOpen(false)} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
             </div>
@@ -310,7 +316,7 @@ export default function DonationsModule({ userRole }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

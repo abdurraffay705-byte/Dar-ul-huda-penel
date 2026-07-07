@@ -189,11 +189,15 @@ const handlePrint = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const isEditable = userRole === 'admin';
+  const normRole = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+  const isEditable = normRole === 'admin';
+  const canAdd = normRole === 'admin' || normRole === 'data_entry';
 
   return (
-    <div className="fade-in">
-      <h1 className="section-title"><CreditCard size={24} color="var(--color-accent)" /> Tuition Fees & Invoices</h1>
+    <>
+      {!isInvoiceOpen && !isPaymentOpen && !activeInvoice && (
+        <div className="fade-in">
+      <h1 className="section-title">Tuition Fees</h1>
 
       {/* STATS OVERVIEW CARDS */}
       <div className="dashboard-grid" style={{ marginBottom: '1.5rem' }}>
@@ -223,8 +227,8 @@ const handlePrint = () => {
       </div>
 
       {/* ACTIONS BAR */}
-      <div style={styles.filterBar} className="glass-panel">
-        <div style={styles.searchBox}>
+      <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
+        <div style={styles.searchBox} className="filter-bar__search">
           <Search size={16} color="#64748b" />
           <input
             type="text"
@@ -235,7 +239,7 @@ const handlePrint = () => {
           />
         </div>
 
-        <div style={styles.filtersGroup}>
+        <div style={styles.filtersGroup} className="filter-bar__controls">
           <select 
             value={statusFilter} 
             onChange={(e) => setStatusFilter(e.target.value)} 
@@ -246,7 +250,7 @@ const handlePrint = () => {
             <option value="unpaid">Unpaid</option>
           </select>
 
-          {isEditable && (
+          {canAdd && (
             <>
               <button onClick={handleOpenInvoiceModal} className="btn-secondary">
                 Generate Invoice
@@ -260,13 +264,11 @@ const handlePrint = () => {
       </div>
 
       {/* FEES TABLE LIST */}
-      {loading ? (
+      {(!loading && filteredFees.length === 0) ? null : loading ? (
         <div style={styles.innerLoader}>
           <div className="spinner" style={styles.spinner}></div>
           <p style={{ marginTop: 10 }}>Loading financial invoices...</p>
         </div>
-      ) : filteredFees.length === 0 ? (
-        <div style={styles.noData}>No outstanding fee invoices logged.</div>
       ) : (
         <div className="table-container">
           <table className="data-table">
@@ -295,8 +297,8 @@ const handlePrint = () => {
                     </span>
                   </td>
                   <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    {isEditable && fee.status === 'unpaid' && (
-                      <button onClick={() => handleOpenPaymentModal(fee)} className="btn-primary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.78rem' }}>
+                    {canAdd && fee.status === 'unpaid' && (
+                      <button onClick={() => handleOpenPaymentModal(fee)} className="btn-primary" style={{ fontSize: '0.78rem' }}>
                         Post Cash
                       </button>
                     )}
@@ -327,14 +329,16 @@ const handlePrint = () => {
           </table>
         </div>
       )}
+      </div>
+      )}
 
       {/* GENERATE BILLING INVOICE MODAL */}
       {isInvoiceOpen && (
-        <div style={styles.modalOverlay}>
+        <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in" style={styles.modalCard}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Generate New Fee Invoice</h3>
-              <button onClick={() => setIsInvoiceOpen(false)} style={styles.closeBtn}>
+              <button onClick={() => setIsInvoiceOpen(false)} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
             </div>
@@ -402,11 +406,11 @@ const handlePrint = () => {
 
       {/* RECORD PAYMENT MODAL */}
       {isPaymentOpen && (
-        <div style={styles.modalOverlay}>
+        <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in" style={styles.modalCard}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Record Fee Cash Collection</h3>
-              <button onClick={() => setIsPaymentOpen(false)} style={styles.closeBtn}>
+              <button onClick={() => setIsPaymentOpen(false)} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
             </div>
@@ -476,13 +480,13 @@ const handlePrint = () => {
 
       {/* PRINTABLE RECEIPT VOUCHER */}
       {activeInvoice && (
-        <div style={styles.modalOverlay}>
+        <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in printable-invoice" style={styles.invoiceCard}>
             <div style={styles.invoiceActions} className="no-print">
-              <button onClick={handlePrint} className="btn-accent" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
+              <button onClick={handlePrint} className="btn-accent" style={{ fontSize: '0.8rem' }}>
                 <Printer size={14} /> Print Receipt
               </button>
-              <button onClick={() => setActiveInvoice(null)} style={styles.invoiceClose}>
+              <button onClick={() => setActiveInvoice(null)} style={styles.invoiceClose} className="btn-icon-only">
                 <X size={20} />
               </button>
             </div>
@@ -576,7 +580,7 @@ const handlePrint = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

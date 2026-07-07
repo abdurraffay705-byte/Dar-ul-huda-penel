@@ -122,7 +122,9 @@ export const auth = {
         const isAuthError =
           error.status === 401 ||
           error.status === 403 ||
-          /jwt|token|expired|invalid/i.test(error.message || '');
+          error.status === 400 ||
+          error.name === 'AuthSessionMissingError' ||
+          /jwt|token|expired|invalid|session missing/i.test(error.message || '');
 
         if (isAuthError) {
           await clearBadSession(error.message);
