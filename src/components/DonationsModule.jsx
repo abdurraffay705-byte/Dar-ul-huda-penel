@@ -244,7 +244,7 @@ export default function DonationsModule({ userRole }) {
       {/* NEW DONATION MODAL */}
       {isRecordOpen && (
         <div className="standalone-form-container fade-in">
-          <div className="glass-panel fade-in" style={styles.modalCard}>
+          <div className="glass-panel fade-in modal-card">
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Record Sadqah / Zakat Donation</h3>
               <button onClick={() => setIsRecordOpen(false)} style={styles.closeBtn} className="btn-icon-only">
@@ -265,7 +265,7 @@ export default function DonationsModule({ userRole }) {
                 />
               </div>
 
-              <div style={styles.formRow}>
+              <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Donation Source Campaign *</label>
                   <select

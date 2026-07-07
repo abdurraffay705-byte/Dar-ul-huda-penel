@@ -421,8 +421,41 @@ select.form-input {
   justify-content: center;
   align-items: center;
   min-height: 80vh;
-  padding: 2rem 1rem;
+  padding: 2rem 1.25rem;
   width: 100%;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 560px;
+  background-color: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2.5rem 2rem;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-sizing: border-box;
+}
+
+.form-row {
+  display: flex;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+@media (max-width: 576px) {
+  .standalone-form-container {
+    padding: 1rem 0;
+  }
+
+  .modal-card {
+    padding: 1.5rem 1.25rem;
+    border-radius: var(--radius-md);
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 1.2rem;
+  }
 }
 
 /* Centralized button & select padding and layout standards */

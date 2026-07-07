@@ -203,7 +203,7 @@ export default function UsersModule({ userRole }) {
       {/* ADD / EDIT USER MODAL */}
       {isFormOpen && (
         <div className="standalone-form-container fade-in">
-          <div className="glass-panel fade-in" style={styles.modalCard}>
+          <div className="glass-panel fade-in modal-card">
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>{editingUser ? 'Update User Profile' : 'Add New User'}</h3>
               <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn} className="btn-icon-only">
@@ -212,7 +212,7 @@ export default function UsersModule({ userRole }) {
             </div>
 
             <form onSubmit={handleFormSubmit} style={styles.modalForm}>
-              <div style={styles.formRow}>
+              <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Full Name *</label>
                   <input
@@ -238,7 +238,7 @@ export default function UsersModule({ userRole }) {
                 </div>
               </div>
 
-              <div style={styles.formRow}>
+              <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Phone</label>
                   <input

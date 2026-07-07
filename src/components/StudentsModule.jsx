@@ -381,7 +381,7 @@ export default function StudentsModule({ userRole, user }) {
       {/* ADMIT / EDIT STUDENT FORM */}
       {isFormOpen && (
         <div className="standalone-form-container fade-in">
-          <div className="glass-panel fade-in" style={styles.modalCard} aria-live="assertive">
+          <div className="glass-panel fade-in modal-card" aria-live="assertive">
             <div style={styles.modalHeader}>
               <h3 id="modal-title" style={styles.modalTitle}>{editingStudent ? 'Edit Student Profile' : 'Admit New Student'}</h3>
               <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn} className="btn-icon-only" aria-label="Close modal">
@@ -390,7 +390,7 @@ export default function StudentsModule({ userRole, user }) {
             </div>
             
             <form onSubmit={handleFormSubmit} style={styles.modalForm}>
-              <div style={styles.formRow}>
+              <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Full Name *</label>
                   <input
@@ -415,7 +415,7 @@ export default function StudentsModule({ userRole, user }) {
                 </div>
               </div>
 
-              <div style={styles.formRow}>
+              <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Phone Contact Number</label>
                   <input

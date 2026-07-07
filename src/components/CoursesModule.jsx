@@ -170,7 +170,7 @@ export default function CoursesModule({ userRole }) {
       {/* ADD / EDIT COURSE MODAL */}
       {isFormOpen && (
         <div className="standalone-form-container fade-in">
-          <div className="glass-panel fade-in" style={styles.modalCard}>
+          <div className="glass-panel fade-in modal-card">
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>{editingCourse ? 'Edit Course Details' : 'Create New Course'}</h3>
               <button onClick={() => setIsFormOpen(false)} style={styles.closeBtn} className="btn-icon-only">

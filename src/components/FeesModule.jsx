@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2 } from 'lucide-react';
+import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3 } from 'lucide-react';
 import logoImg from '../assets/logo.jpg';
 
 export default function FeesModule({ userRole }) {
@@ -15,6 +15,7 @@ export default function FeesModule({ userRole }) {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [activeInvoice, setActiveInvoice] = useState(null);
   const [paymentsHistory, setPaymentsHistory] = useState([]);
+  const [editingFee, setEditingFee] = useState(null);
   
   // Stats
   const [stats, setStats] = useState({ totalDue: 0, totalPaid: 0, totalPending: 0 });
@@ -93,6 +94,18 @@ export default function FeesModule({ userRole }) {
       due_date: new Date().toISOString().split('T')[0],
       status: 'unpaid'
     });
+    setEditingFee(null);
+    setIsInvoiceOpen(true);
+  };
+
+  const handleOpenEditInvoiceModal = (fee) => {
+    setInvoiceForm({
+      student_id: fee.student_id,
+      amount: Number(fee.amount),
+      due_date: fee.due_date,
+      status: fee.status
+    });
+    setEditingFee(fee);
     setIsInvoiceOpen(true);
   };
 
@@ -112,17 +125,33 @@ export default function FeesModule({ userRole }) {
 
   const handleInvoiceSubmit = async (e) => {
     e.preventDefault();
-    const res = await database.fees.create({
-      student_id: invoiceForm.student_id,
-      amount: Number(invoiceForm.amount),
-      due_date: invoiceForm.due_date,
-      status: invoiceForm.status || 'unpaid'
-    });
-    if (res.success) {
-      setIsInvoiceOpen(false);
-      loadFeeData();
+    if (editingFee) {
+      const res = await database.fees.update(editingFee.id, {
+        student_id: invoiceForm.student_id,
+        amount: Number(invoiceForm.amount),
+        due_date: invoiceForm.due_date,
+        status: invoiceForm.status
+      });
+      if (res.success) {
+        setIsInvoiceOpen(false);
+        setEditingFee(null);
+        loadFeeData();
+      } else {
+        alert("Failed to update billing invoice: " + res.error);
+      }
     } else {
-      alert("Failed to create billing invoice: " + res.error);
+      const res = await database.fees.create({
+        student_id: invoiceForm.student_id,
+        amount: Number(invoiceForm.amount),
+        due_date: invoiceForm.due_date,
+        status: invoiceForm.status || 'unpaid'
+      });
+      if (res.success) {
+        setIsInvoiceOpen(false);
+        loadFeeData();
+      } else {
+        alert("Failed to create billing invoice: " + res.error);
+      }
     }
   };
 
@@ -297,6 +326,11 @@ const handlePrint = () => {
                     </span>
                   </td>
                   <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    {canAdd && (
+                      <button onClick={() => handleOpenEditInvoiceModal(fee)} className="btn-secondary" style={styles.invoiceBtn}>
+                        <Edit3 size={13} /> Edit
+                      </button>
+                    )}
                     {canAdd && fee.status === 'unpaid' && (
                       <button onClick={() => handleOpenPaymentModal(fee)} className="btn-primary" style={{ fontSize: '0.78rem' }}>
                         Post Cash
@@ -335,10 +369,10 @@ const handlePrint = () => {
       {/* GENERATE BILLING INVOICE MODAL */}
       {isInvoiceOpen && (
         <div className="standalone-form-container fade-in">
-          <div className="glass-panel fade-in" style={styles.modalCard}>
+          <div className="glass-panel fade-in modal-card">
             <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Generate New Fee Invoice</h3>
-              <button onClick={() => setIsInvoiceOpen(false)} style={styles.closeBtn} className="btn-icon-only">
+              <h3 style={styles.modalTitle}>{editingFee ? 'Edit Fee Invoice' : 'Generate New Fee Invoice'}</h3>
+              <button onClick={() => { setIsInvoiceOpen(false); setEditingFee(null); }} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
             </div>
@@ -368,7 +402,7 @@ const handlePrint = () => {
                 </select>
               </div>
 
-              <div style={styles.formRow}>
+              <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Invoice Amount (PKR) *</label>
                   <input
@@ -392,11 +426,11 @@ const handlePrint = () => {
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setIsInvoiceOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => { setIsInvoiceOpen(false); setEditingFee(null); }} className="btn-secondary">
                   Cancel
                 </button>
                 <button type="submit" className="btn-accent">
-                  Publish Invoice
+                  {editingFee ? 'Save Invoice' : 'Publish Invoice'}
                 </button>
               </div>
             </form>
@@ -407,7 +441,7 @@ const handlePrint = () => {
       {/* RECORD PAYMENT MODAL */}
       {isPaymentOpen && (
         <div className="standalone-form-container fade-in">
-          <div className="glass-panel fade-in" style={styles.modalCard}>
+          <div className="glass-panel fade-in modal-card">
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Record Fee Cash Collection</h3>
               <button onClick={() => setIsPaymentOpen(false)} style={styles.closeBtn} className="btn-icon-only">
@@ -429,7 +463,7 @@ const handlePrint = () => {
                 </select>
               </div>
 
-              <div style={styles.formRow}>
+              <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Amount Paid (PKR) *</label>
                   <input
