@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Phone, Users as UsersIcon } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Phone, Users as UsersIcon, ChevronDown } from 'lucide-react';
+import EmptyState from './EmptyState';
+import InfoCard from './InfoCard';
+
 
 export default function UsersModule({ userRole }) {
   const [users, setUsers] = useState([]);
@@ -16,7 +19,14 @@ export default function UsersModule({ userRole }) {
   const blankForm = {
     full_name: '',
     phone: '',
-    role: 'student'
+    role: 'student',
+    email: '',
+    education: '',
+    age: '',
+    father_name: '',
+    mother_name: '',
+    address: '',
+    cnic: ''
   };
 
   const [formData, setFormData] = useState(blankForm);
@@ -51,7 +61,14 @@ export default function UsersModule({ userRole }) {
     setFormData({
       full_name: user.full_name || '',
       phone: user.phone || '',
-      role: user.role || 'student'
+      role: user.role || 'student',
+      email: user.email || '',
+      education: user.education || '',
+      age: user.age || '',
+      father_name: user.father_name || '',
+      mother_name: user.mother_name || '',
+      address: user.address || '',
+      cnic: user.cnic || ''
     });
     setEditingUser(user);
     setIsFormOpen(true);
@@ -104,7 +121,8 @@ export default function UsersModule({ userRole }) {
     const map = {
       admin: { backgroundColor: 'rgba(212, 175, 55, 0.15)', color: '#92702c' },
       teacher: { backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#059669' },
-      student: { backgroundColor: 'rgba(59, 130, 246, 0.12)', color: '#2563eb' }
+      student: { backgroundColor: 'rgba(59, 130, 246, 0.12)', color: '#2563eb' },
+      data_entry: { backgroundColor: 'rgba(139, 92, 246, 0.12)', color: '#7c3aed' }
     };
     return { ...styles.roleBadge, ...(map[role] || {}) };
   };
@@ -129,16 +147,20 @@ export default function UsersModule({ userRole }) {
         </div>
 
         <div style={styles.filtersGroup}>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            style={styles.filterSelect}
-          >
-            <option value="">All Roles</option>
-            <option value="admin">Admin</option>
-            <option value="teacher">Teacher</option>
-            <option value="student">Student</option>
-          </select>
+          <div className="select-wrapper" style={{ width: 'auto' }}>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              style={styles.filterSelect}
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="teacher">Teacher</option>
+              <option value="student">Student</option>
+              <option value="data_entry">Data entry</option>
+            </select>
+            <ChevronDown size={14} className="select-arrow" />
+          </div>
 
           {isEditable && (
             <button onClick={handleOpenCreateForm} className="btn-primary">
@@ -160,40 +182,42 @@ export default function UsersModule({ userRole }) {
           <p style={{ marginTop: 10 }}>Loading users...</p>
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div style={styles.noData}>No users found.</div>
+        <EmptyState
+          icon={users.length === 0 ? UsersIcon : Search}
+          title={users.length === 0 ? "No registered users" : "No matching users found"}
+          message={users.length === 0 ? "Create a new user account to get started." : "Try clearing filters or adjusting your search query."}
+        />
       ) : (
-        <div style={styles.userGrid}>
+        <div className="info-card-grid">
           {filteredUsers.map((user) => (
-            <div key={user.id} className="glass-panel" style={styles.userCard}>
-              <div style={styles.cardHeader}>
-                <div style={styles.userAvatar}>
-                  {(user.full_name || '?').charAt(0)}
-                </div>
-                <div style={styles.headerInfo}>
-                  <h3 style={styles.userName}>{user.full_name}</h3>
-                  <span style={roleBadgeStyle(user.role)}>{user.role}</span>
-                </div>
-              </div>
-
-              <div style={styles.cardBody}>
-                <div style={styles.infoRow}>
-                  <Phone size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Phone:</span>
-                  <span style={styles.infoVal}>{user.phone || '-'}</span>
-                </div>
-              </div>
-
-              {isEditable && (
-                <div style={styles.cardActions}>
-                  <button onClick={() => handleOpenEditForm(user)} className="btn-secondary" style={styles.editBtn}>
-                    <Edit3 size={14} /> Edit Details
-                  </button>
-                  <button onClick={() => handleDelete(user.id)} style={styles.deleteBtn}>
-                    <Trash2 size={14} /> Remove
-                  </button>
-                </div>
-              )}
-            </div>
+            <InfoCard
+              key={user.id}
+              avatarInitial={(user.full_name || '?').charAt(0)}
+              name={user.full_name}
+              badgeLabel={user.role}
+              badgeType={user.role}
+              infoRows={[
+                { icon: Phone, label: 'Phone', value: user.phone || '-' }
+              ]}
+              actions={
+                isEditable
+                  ? [
+                      {
+                        label: 'Edit Details',
+                        icon: Edit3,
+                        onClick: () => handleOpenEditForm(user),
+                        variant: 'secondary'
+                      },
+                      {
+                        label: 'Remove',
+                        icon: Trash2,
+                        onClick: () => handleDelete(user.id),
+                        variant: 'danger'
+                      }
+                    ]
+                  : []
+              }
+            />
           ))}
         </div>
       )}
@@ -226,15 +250,19 @@ export default function UsersModule({ userRole }) {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Role *</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="form-input"
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="teacher">Teacher</option>
-                    <option value="student">Student</option>
-                  </select>
+                  <div className="select-wrapper">
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      className="form-input"
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="teacher">Teacher</option>
+                      <option value="student">Student</option>
+                      <option value="data_entry">Data entry</option>
+                    </select>
+                    <ChevronDown size={14} className="select-arrow" />
+                  </div>
                 </div>
               </div>
 
@@ -243,9 +271,89 @@ export default function UsersModule({ userRole }) {
                   <label className="form-label">Phone</label>
                   <input
                     type="text"
-                    placeholder="e.g. +92 300 1234567"
+                    placeholder="e.g. 03001234567"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/[^0-9]/g, "") })}
+                    className="form-input"
+                    maxLength={11}
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="email@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">CNIC Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 35201-1234567-1"
+                    value={formData.cnic}
+                    onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Age</label>
+                  <input
+                    type="number"
+                    placeholder="Age"
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Education Qualification</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Matric, Intermediate, BS"
+                    value={formData.education}
+                    onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Father's Name</label>
+                  <input
+                    type="text"
+                    placeholder="Father's Name"
+                    value={formData.father_name}
+                    onChange={(e) => setFormData({ ...formData, father_name: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Mother's Name</label>
+                  <input
+                    type="text"
+                    placeholder="Mother's Name"
+                    value={formData.mother_name}
+                    onChange={(e) => setFormData({ ...formData, mother_name: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Residential Address</label>
+                  <input
+                    type="text"
+                    placeholder="Street address, City"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     className="form-input"
                   />
                 </div>

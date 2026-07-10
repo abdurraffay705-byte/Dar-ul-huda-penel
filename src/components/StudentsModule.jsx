@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, MapPin, Calendar, CheckSquare } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, MapPin, Calendar, CheckSquare, ChevronDown, GraduationCap } from 'lucide-react';
+import EmptyState from './EmptyState';
+import InfoCard from './InfoCard';
+import Badge from './Badge';
+
+
 
 export default function StudentsModule({ userRole, user }) {
 
@@ -202,20 +207,23 @@ export default function StudentsModule({ userRole, user }) {
         </div>
         
         <div style={styles.filtersGroup} className="filter-bar__controls">
-          <select 
-            value={classFilter} 
-            onChange={(e) => setClassFilter(e.target.value)} 
-            style={styles.filterSelect}
-          >
-            <option value="">All Classes</option>
-            <option value="Grade 1">Grade 1</option>
-            <option value="Grade 2">Grade 2</option>
-            <option value="Grade 3">Grade 3</option>
-            <option value="Grade 4">Grade 4</option>
-            <option value="Grade 5">Grade 5</option>
-            <option value="Hifz">Hifz</option>
-            <option value="Nazra">Nazra</option>
-          </select>
+          <div className="select-wrapper" style={{ width: 'auto' }}>
+            <select 
+              value={classFilter} 
+              onChange={(e) => setClassFilter(e.target.value)} 
+              style={styles.filterSelect}
+            >
+              <option value="">All Classes</option>
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+              <option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option>
+              <option value="Hifz">Hifz</option>
+              <option value="Nazra">Nazra</option>
+            </select>
+            <ChevronDown size={14} className="select-arrow" />
+          </div>
 
           {isEditable && (
             <button onClick={handleOpenCreateForm} className="btn-primary">
@@ -226,62 +234,70 @@ export default function StudentsModule({ userRole, user }) {
       </div>
 
       {/* DUAL WORKSPACE SPLIT */}
-      {(!loading && filteredStudents.length === 0) ? null : (
+      {loading ? (
+        <div style={styles.innerLoader}>
+          <div className="spinner" style={styles.spinner}></div>
+          <p style={{ marginTop: 10 }}>Loading rosters...</p>
+        </div>
+      ) : filteredStudents.length === 0 ? (
+        <EmptyState
+          icon={students.length === 0 ? GraduationCap : Search}
+          title={students.length === 0 ? "No students registered" : "No matching students found"}
+          message={students.length === 0 ? "Admit a new student to build the roster." : "Try clearing filters or adjusting your search query."}
+        />
+      ) : (
       <div style={styles.workspace}>
-        {/* ROSTER TABLE */}
+        {/* ROSTER CARD GRID */}
         <div style={{ ...styles.tableArea, width: activeStudent ? '60%' : '100%' }}>
-          {loading ? (
-            <div style={styles.innerLoader}>
-              <div className="spinner" style={styles.spinner}></div>
-              <p style={{ marginTop: 10 }}>Loading rosters...</p>
-            </div>
-          ) : (
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Roll Number</th>
-                    <th>Full Name</th>
-                    <th>Class</th>
-                    <th>Father's Name</th>
-                    <th>Contact</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents.map((student) => (
-                    <tr key={student.id} style={{ 
-                      backgroundColor: activeStudent?.id === student.id ? '#fdf8ec' : 'transparent',
-                      borderLeft: activeStudent?.id === student.id ? '3px solid var(--color-accent)' : 'none'
-                    }}>
-                      <td style={{ fontWeight: '700', color: 'var(--color-primary-light)' }}>{student.roll_number}</td>
-                      <td style={{ fontWeight: '600' }}>{student.full_name}</td>
-                      <td>{student.class}</td>
-                      <td>{student.father_name}</td>
-                      <td>{student.phone || '-'}</td>
-                      <td style={styles.actionsCell}>
-                        <button onClick={() => handleViewDetails(student)} style={styles.actionBtn} className="btn-icon-only" title="View Profile">
-                          <Eye size={15} color="var(--color-primary)" />
-                        </button>
-                        <>
-                          {canEditStudent(student) && (
-                            <button onClick={() => handleOpenEditForm(student)} style={styles.actionBtn} className="btn-icon-only" title="Edit Student">
-                              <Edit3 size={15} color="var(--color-accent)" />
-                            </button>
-                          )}
-                          {canDeleteStudent() && (
-                            <button onClick={() => handleDelete(student.id)} style={styles.actionBtn} className="btn-icon-only" title="Delete">
-                              <Trash2 size={15} color="var(--color-danger)" />
-                            </button>
-                          )}
-                        </>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div className="info-card-grid">
+            {filteredStudents.map((student) => {
+              const isActive = activeStudent?.id === student.id;
+              const cardActions = [
+                {
+                  label: 'View Profile',
+                  icon: Eye,
+                  onClick: () => handleViewDetails(student),
+                  variant: 'secondary'
+                }
+              ];
+              if (canEditStudent(student)) {
+                cardActions.push({
+                  label: 'Edit Details',
+                  icon: Edit3,
+                  onClick: () => handleOpenEditForm(student),
+                  variant: 'secondary'
+                });
+              }
+              if (canDeleteStudent()) {
+                cardActions.push({
+                  label: 'Delete',
+                  icon: Trash2,
+                  onClick: () => handleDelete(student.id),
+                  variant: 'danger'
+                });
+              }
+
+              return (
+                <InfoCard
+                  key={student.id}
+                  avatarInitial={student.full_name.charAt(0)}
+                  name={student.full_name}
+                  badgeLabel={student.class}
+                  badgeType="student"
+                  infoRows={[
+                    { icon: GraduationCap, label: 'Roll Number', value: student.roll_number },
+                    { icon: User, label: "Father's Name", value: student.father_name },
+                    { icon: Phone, label: 'Contact', value: student.phone || '-' }
+                  ]}
+                  actions={cardActions}
+                  style={isActive ? {
+                    backgroundColor: '#fdf8ec',
+                    borderLeft: '4px solid var(--color-accent)'
+                  } : {}}
+                />
+              );
+            })}
+          </div>
         </div>
 
         {/* DETAILED STUDENT WORKSPACE PROFILE */}
@@ -299,7 +315,7 @@ export default function StudentsModule({ userRole, user }) {
                 {activeStudent.full_name.charAt(0)}
               </div>
               <h4 style={styles.profileName}>{activeStudent.full_name}</h4>
-              <span className="badge success">Active Student</span>
+              <Badge label="Active Student" type="success" />
             </div>
 
             <div style={styles.detailsGrid}>
@@ -346,9 +362,7 @@ export default function StudentsModule({ userRole, user }) {
                     <div style={{ textAlign: 'right' }}>
                       <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-primary)' }}>PKR {Number(f.amount).toLocaleString()}</span>
                       <div>
-                        <span className={`badge ${f.status === 'paid' ? 'success' : 'danger'}`} style={{ fontSize: '0.6rem', padding: '0 0.2rem' }}>
-                          {f.status}
-                        </span>
+                        <Badge label={f.status} type={f.status} />
                       </div>
                     </div>
                   </div>
@@ -364,9 +378,7 @@ export default function StudentsModule({ userRole, user }) {
                 studentAttendance.slice(0, 5).map(a => (
                   <div key={a.id} style={styles.auxItem}>
                     <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{a.date}</span>
-                    <span className={`badge ${a.status === 'present' ? 'success' : (a.status === 'absent' ? 'danger' : 'warning')}`} style={{ fontSize: '0.6rem' }}>
-                      {a.status}
-                    </span>
+                    <Badge label={a.status} type={a.status} />
                   </div>
                 ))
               )}
@@ -420,27 +432,31 @@ export default function StudentsModule({ userRole, user }) {
                   <label className="form-label">Phone Contact Number</label>
                   <input
                     type="text"
-                    placeholder="e.g. +92 300 1234567"
+                    placeholder="e.g. 03001234567"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/[^0-9]/g, "") })}
                     className="form-input"
+                    maxLength={11}
                   />
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Class Level *</label>
-                  <select
-                    value={formData.class_name}
-                    onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                    className="form-input"
-                  >
-                    <option value="Grade 1">Grade 1</option>
-                    <option value="Grade 2">Grade 2</option>
-                    <option value="Grade 3">Grade 3</option>
-                    <option value="Grade 4">Grade 4</option>
-                    <option value="Grade 5">Grade 5</option>
-                    <option value="Hifz">Hifz</option>
-                    <option value="Nazra">Nazra</option>
-                  </select>
+                  <div className="select-wrapper">
+                    <select
+                      value={formData.class_name}
+                      onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
+                      className="form-input"
+                    >
+                      <option value="Grade 1">Grade 1</option>
+                      <option value="Grade 2">Grade 2</option>
+                      <option value="Grade 3">Grade 3</option>
+                      <option value="Grade 4">Grade 4</option>
+                      <option value="Grade 5">Grade 5</option>
+                      <option value="Hifz">Hifz</option>
+                      <option value="Nazra">Nazra</option>
+                    </select>
+                    <ChevronDown size={14} className="select-arrow" />
+                  </div>
                 </div>
               </div>
 

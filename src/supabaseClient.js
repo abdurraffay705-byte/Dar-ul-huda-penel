@@ -181,7 +181,7 @@ export const database = {
     },
 
     create: async (userPayload) => {
-      const { full_name, phone, role } = userPayload;
+      const { full_name, phone, role, email, education, age, father_name, mother_name, address, cnic } = userPayload;
 
       const { data, error } = await supabase
         .from('users')
@@ -189,7 +189,14 @@ export const database = {
           id: uuidv4(),
           full_name,
           phone,
-          role
+          role,
+          email,
+          education,
+          age: age ? Number(age) : null,
+          father_name,
+          mother_name,
+          address,
+          cnic
         })
         .select();
 
@@ -198,11 +205,22 @@ export const database = {
     },
 
     update: async (id, userPayload) => {
-      const { full_name, phone, role } = userPayload;
+      const { full_name, phone, role, email, education, age, father_name, mother_name, address, cnic } = userPayload;
 
       const { data, error } = await supabase
         .from('users')
-        .update({ full_name, phone, role })
+        .update({
+          full_name,
+          phone,
+          role,
+          email,
+          education,
+          age: age ? Number(age) : null,
+          father_name,
+          mother_name,
+          address,
+          cnic
+        })
         .eq('id', id)
         .select();
 
@@ -590,6 +608,21 @@ export const database = {
           source: donation.source,
           payment_mode: donation.payment_mode.toLowerCase()
         }])
+        .select();
+      if (error) return { success: false, error: error.message };
+      return { success: true, data: data[0] };
+    },
+
+    update: async (id, donation) => {
+      const { data, error } = await supabase
+        .from('donations')
+        .update({
+          donor_name: donation.donor_name,
+          amount: Number(donation.amount),
+          source: donation.source,
+          payment_mode: donation.payment_mode.toLowerCase()
+        })
+        .eq('id', id)
         .select();
       if (error) return { success: false, error: error.message };
       return { success: true, data: data[0] };

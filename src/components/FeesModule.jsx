@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3 } from 'lucide-react';
+import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3, ChevronDown, Calendar, GraduationCap } from 'lucide-react';
+import EmptyState from './EmptyState';
+import InfoCard from './InfoCard';
 import logoImg from '../assets/logo.jpg';
+
 
 export default function FeesModule({ userRole }) {
   const [fees, setFees] = useState([]);
@@ -269,15 +272,18 @@ const handlePrint = () => {
         </div>
 
         <div style={styles.filtersGroup} className="filter-bar__controls">
-          <select 
-            value={statusFilter} 
-            onChange={(e) => setStatusFilter(e.target.value)} 
-            style={styles.filterSelect}
-          >
-            <option value="">All Statuses</option>
-            <option value="paid">Paid</option>
-            <option value="unpaid">Unpaid</option>
-          </select>
+          <div className="select-wrapper" style={{ width: 'auto' }}>
+            <select 
+              value={statusFilter} 
+              onChange={(e) => setStatusFilter(e.target.value)} 
+              style={styles.filterSelect}
+            >
+              <option value="">All Statuses</option>
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
+            </select>
+            <ChevronDown size={14} className="select-arrow" />
+          </div>
 
           {canAdd && (
             <>
@@ -293,74 +299,89 @@ const handlePrint = () => {
       </div>
 
       {/* FEES TABLE LIST */}
-      {(!loading && filteredFees.length === 0) ? null : loading ? (
+      {loading ? (
         <div style={styles.innerLoader}>
           <div className="spinner" style={styles.spinner}></div>
           <p style={{ marginTop: 10 }}>Loading financial invoices...</p>
         </div>
+      ) : filteredFees.length === 0 ? (
+        <EmptyState
+          icon={fees.length === 0 ? CreditCard : Search}
+          title={fees.length === 0 ? "No fee invoices registered" : "No matching invoices found"}
+          message={fees.length === 0 ? "Record a new payment or generate invoices to get started." : "Try clearing filters or adjusting your search query."}
+        />
       ) : (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Roll Number</th>
-                <th>Invoiced Amount</th>
-                <th>Total Paid</th>
-                <th>Due Date</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredFees.map((fee) => (
-        <tr key={fee.id} style={new Date(fee.due_date) < new Date() && fee.status === 'unpaid' ? styles.overdueRow : {}}>
-                  <td style={{ fontWeight: '600' }}>{fee.student_name}</td>
-                  <td style={{ fontWeight: '600', color: 'var(--color-primary-light)' }}>{fee.roll_number}</td>
-                  <td>PKR {Number(fee.amount).toLocaleString()}</td>
-                  <td style={{ fontWeight: '700', color: 'var(--color-success)' }}>PKR {Number(fee.total_paid).toLocaleString()}</td>
-                  <td>{fee.due_date}</td>
-                  <td>
-                    <span className={`badge ${fee.status === 'paid' ? 'success' : 'danger'}`}>
-                      {fee.status}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    {canAdd && (
-                      <button onClick={() => handleOpenEditInvoiceModal(fee)} className="btn-secondary" style={styles.invoiceBtn}>
-                        <Edit3 size={13} /> Edit
-                      </button>
-                    )}
-                    {canAdd && fee.status === 'unpaid' && (
-                      <button onClick={() => handleOpenPaymentModal(fee)} className="btn-primary" style={{ fontSize: '0.78rem' }}>
-                        Post Cash
-                      </button>
-                    )}
-                    {fee.total_paid > 0 && (
-                      <button onClick={() => handleOpenReceipt(fee)} className="btn-secondary" style={styles.invoiceBtn}>
-                        <Printer size={13} style={{ marginRight: 4 }} /> Receipt
-                      </button>
-                    )}
-                    {fee.status === 'unpaid' && (
-                      <button onClick={() => handleMarkPaid(fee.id)} className="btn-success" style={styles.invoiceBtn}>
-                        Mark as Paid
-                      </button>
-                    )}
-                    {isEditable && (
-                      <button
-                        onClick={() => handleDeleteInvoice(fee.id)}
-                        className="btn-secondary"
-                        style={{ ...styles.invoiceBtn, color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                        title="Delete invoice"
-                      >
-                        <Trash2 size={13} style={{ marginRight: 4 }} /> Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="info-card-grid">
+          {filteredFees.map((fee) => {
+            const isOverdue = new Date(fee.due_date) < new Date() && fee.status === 'unpaid';
+            const cardActions = [];
+            if (canAdd) {
+              cardActions.push({
+                label: 'Edit',
+                icon: Edit3,
+                onClick: () => handleOpenEditInvoiceModal(fee),
+                variant: 'secondary'
+              });
+            }
+            if (canAdd && fee.status === 'unpaid') {
+              cardActions.push({
+                label: 'Post Cash',
+                onClick: () => handleOpenPaymentModal(fee),
+                variant: 'primary'
+              });
+            }
+            if (fee.total_paid > 0) {
+              cardActions.push({
+                label: 'Receipt',
+                icon: Printer,
+                onClick: () => handleOpenReceipt(fee),
+                variant: 'secondary'
+              });
+            }
+            if (fee.status === 'unpaid') {
+              cardActions.push({
+                label: 'Mark as Paid',
+                icon: Check,
+                onClick: () => handleMarkPaid(fee.id),
+                variant: 'success'
+              });
+            }
+            if (isEditable) {
+              cardActions.push({
+                label: 'Delete',
+                icon: Trash2,
+                onClick: () => handleDeleteInvoice(fee.id),
+                variant: 'danger'
+              });
+            }
+
+            return (
+              <InfoCard
+                key={fee.id}
+                avatarInitial={fee.student_name ? fee.student_name.charAt(0) : '?'}
+                name={fee.student_name}
+                badgeLabel={fee.status}
+                badgeType={fee.status}
+                infoRows={[
+                  { icon: GraduationCap, label: 'Roll Number', value: fee.roll_number },
+                  { icon: CreditCard, label: 'Invoiced', value: `PKR ${Number(fee.amount).toLocaleString()}` },
+                  { 
+                    icon: Landmark, 
+                    label: 'Total Paid', 
+                    value: `PKR ${Number(fee.total_paid).toLocaleString()}`,
+                    iconColor: 'var(--color-success)',
+                    valueStyle: { fontWeight: '700', color: 'var(--color-success)' }
+                  },
+                  { icon: Calendar, label: 'Due Date', value: fee.due_date }
+                ]}
+                actions={cardActions}
+                style={isOverdue ? {
+                  backgroundColor: '#fef2f2',
+                  borderLeft: '4px solid var(--color-danger)'
+                } : {}}
+              />
+            );
+          })}
         </div>
       )}
       </div>
@@ -380,26 +401,32 @@ const handlePrint = () => {
             <form onSubmit={handleInvoiceSubmit} style={styles.modalForm}>
                 <div className="form-group">
                   <label className="form-label">Status *</label>
-                  <select
-                    value={invoiceForm.status}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, status: e.target.value })}
-                    className="form-input"
-                  >
-                    <option value="unpaid">Unpaid</option>
-                    <option value="paid">Paid</option>
-                  </select>
+                  <div className="select-wrapper">
+                    <select
+                      value={invoiceForm.status}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, status: e.target.value })}
+                      className="form-input"
+                    >
+                      <option value="unpaid">Unpaid</option>
+                      <option value="paid">Paid</option>
+                    </select>
+                    <ChevronDown size={14} className="select-arrow" />
+                  </div>
                 </div>
               <div className="form-group">
                 <label className="form-label">Select Student *</label>
-                <select
-                  value={invoiceForm.student_id}
-                  onChange={(e) => setInvoiceForm({ ...invoiceForm, student_id: e.target.value })}
-                  className="form-input"
-                >
-                  {students.map(s => (
-                    <option key={s.id} value={s.id}>{s.roll_number} - {s.full_name} ({s.class})</option>
-                  ))}
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    value={invoiceForm.student_id}
+                    onChange={(e) => setInvoiceForm({ ...invoiceForm, student_id: e.target.value })}
+                    className="form-input"
+                  >
+                    {students.map(s => (
+                      <option key={s.id} value={s.id}>{s.roll_number} - {s.full_name} ({s.class})</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
+                </div>
               </div>
 
               <div className="form-row">
@@ -452,15 +479,18 @@ const handlePrint = () => {
             <form onSubmit={handlePaymentSubmit} style={styles.modalForm}>
               <div className="form-group">
                 <label className="form-label">Select Fee Invoice *</label>
-                <select
-                  value={paymentForm.fee_id}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, fee_id: e.target.value })}
-                  className="form-input"
-                >
-                  {fees.filter(f => f.status === 'unpaid').map(f => (
-                    <option key={f.id} value={f.id}>{f.student_name} ({f.roll_number}) - Due: PKR {f.amount - f.total_paid} (Invoice Ref: {f.due_date})</option>
-                  ))}
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    value={paymentForm.fee_id}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, fee_id: e.target.value })}
+                    className="form-input"
+                  >
+                    {fees.filter(f => f.status === 'unpaid').map(f => (
+                      <option key={f.id} value={f.id}>{f.student_name} ({f.roll_number}) - Due: PKR {f.amount - f.total_paid} (Invoice Ref: {f.due_date})</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
+                </div>
               </div>
 
               <div className="form-row">
@@ -488,15 +518,18 @@ const handlePrint = () => {
 
               <div className="form-group">
                 <label className="form-label">Payment Mode *</label>
-                <select
-                  value={paymentForm.payment_mode}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, payment_mode: e.target.value })}
-                  className="form-input"
-                >
-                  <option value="cash">Cash</option>
-                  <option value="bank">Bank Transfer</option>
-                  <option value="online">Easypaisa / JazzCash / Online</option>
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    value={paymentForm.payment_mode}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, payment_mode: e.target.value })}
+                    className="form-input"
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="bank">Bank Transfer</option>
+                    <option value="online">Easypaisa / JazzCash / Online</option>
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
+                </div>
               </div>
 
               <div style={styles.modalActions}>

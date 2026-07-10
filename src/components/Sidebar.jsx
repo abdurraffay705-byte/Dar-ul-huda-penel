@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -16,6 +16,7 @@ import logoImg from '../assets/logo.jpg';
 
 export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const roleDisplay = {
     admin: 'Administrator',
     teacher: 'Instructor / Teacher',
@@ -75,7 +76,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
       <div style={styles.navMenu}>
         {visibleItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = location.pathname === '/' + item.id || (location.pathname === '/' && item.id === 'dashboard');
           return (
             <button key={item.id} onClick={() => { setActiveTab(item.id); navigate('/' + item.id); }} style={{ ...styles.navLink, ...(isActive ? styles.navLinkActive : {}) }} className="sidebar-nav-button">
               <Icon size={18} color={isActive ? '#d4af37' : '#94a3b8'} style={{ transition: 'color 0.2s' }} />

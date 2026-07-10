@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign, ChevronDown } from 'lucide-react';
+import EmptyState from './EmptyState';
+import InfoCard from './InfoCard';
+
 
 export default function TeachersModule({ userRole }) {
   const [teachers, setTeachers] = useState([]);
@@ -174,18 +177,21 @@ export default function TeachersModule({ userRole }) {
         </div>
 
         <div style={styles.filtersGroup} className="filter-bar__controls">
-          <select 
-            value={subjectFilter} 
-            onChange={(e) => setSubjectFilter(e.target.value)} 
-            style={styles.filterSelect}
-          >
-            <option value="">All Subjects</option>
-            <option value="Hifz Instruction">Hifz Instruction</option>
-            <option value="Arabic Language">Arabic Language</option>
-            <option value="Islamic Studies">Islamic Studies</option>
-            <option value="Mathematics & Science">Mathematics & Science</option>
-            <option value="English Language">English Language</option>
-          </select>
+          <div className="select-wrapper" style={{ width: 'auto' }}>
+            <select 
+              value={subjectFilter} 
+              onChange={(e) => setSubjectFilter(e.target.value)} 
+              style={styles.filterSelect}
+            >
+              <option value="">All Subjects</option>
+              <option value="Hifz Instruction">Hifz Instruction</option>
+              <option value="Arabic Language">Arabic Language</option>
+              <option value="Islamic Studies">Islamic Studies</option>
+              <option value="Mathematics & Science">Mathematics & Science</option>
+              <option value="English Language">English Language</option>
+            </select>
+            <ChevronDown size={14} className="select-arrow" />
+          </div>
 
           {canAdd && (
             <button onClick={handleOpenCreateForm} className="btn-primary">
@@ -196,67 +202,67 @@ export default function TeachersModule({ userRole }) {
       </div>
 
       {/* TEACHERS LIST GRID */}
-      {(!loading && filteredTeachers.length === 0) ? null : loading ? (
+      {loading ? (
         <div style={styles.innerLoader}>
           <div className="spinner" style={styles.spinner}></div>
           <p style={{ marginTop: 10 }}>Loading registries...</p>
         </div>
+      ) : filteredTeachers.length === 0 ? (
+        <EmptyState
+          icon={teachers.length === 0 ? Award : Search}
+          title={teachers.length === 0 ? "No instructors registered" : "No matching instructors found"}
+          message={teachers.length === 0 ? "Appoint a new teacher to build the registry." : "Try clearing filters or adjusting your search query."}
+        />
       ) : (
-        <div style={styles.teacherGrid}>
-          {filteredTeachers.map((teacher) => (
-            <div key={teacher.id} className="glass-panel" style={styles.teacherCard}>
-              <div style={styles.cardHeader}>
-                <div style={styles.teacherAvatar}>
-                  {teacher.full_name.charAt(0)}
-                </div>
-                <div style={styles.headerInfo}>
-                  <h3 style={styles.teacherName}>{teacher.full_name}</h3>
-                  <span style={styles.teacherId}>Joined: {teacher.joining_date}</span>
-                </div>
-              </div>
+        <div className="info-card-grid">
+          {filteredTeachers.map((teacher) => {
+            const cardActions = [];
+            if (isEditable || norm === 'data_entry') {
+              cardActions.push({
+                label: 'Edit Details',
+                icon: Edit3,
+                onClick: () => handleOpenEditForm(teacher),
+                variant: 'secondary'
+              });
+            }
+            if (isEditable) {
+              cardActions.push({
+                label: 'Remove',
+                icon: Trash2,
+                onClick: () => handleDelete(teacher.id),
+                variant: 'danger'
+              });
+            }
 
-              <div style={styles.cardBody}>
-                <div style={styles.infoRow}>
-                  <Award size={14} color="var(--color-accent)" />
-                  <span style={styles.infoLabel}>Subject:</span>
-                  <span style={styles.infoVal}>{teacher.subject}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <Award size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Qualification:</span>
-                  <span style={styles.infoVal}>{teacher.qualification || '-'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <Phone size={14} color="#64748b" />
-                  <span style={styles.infoLabel}>Phone:</span>
-                  <span style={styles.infoVal}>{teacher.phone || '-'}</span>
-                </div>
-                
-                {isEditable && (
-                  <div style={styles.infoRow}>
-                    <DollarSign size={14} color="#10b981" />
-                    <span style={styles.infoLabel}>Monthly Salary:</span>
-                    <span style={{ ...styles.infoVal, fontWeight: 750, color: 'var(--color-primary)' }}>
-                      PKR {Number(teacher.salary).toLocaleString()}
-                    </span>
-                  </div>
-                )}
-              </div>
+            const infoRows = [
+              { icon: Award, label: 'Subject', value: teacher.subject, iconColor: 'var(--color-accent)' },
+              { icon: Award, label: 'Qualification', value: teacher.qualification || '-' },
+              { icon: Phone, label: 'Phone', value: teacher.phone || '-' }
+            ];
 
-              {(isEditable || norm === 'data_entry') && (
-                <div style={styles.cardActions}>
-                  <button onClick={() => handleOpenEditForm(teacher)} className="btn-secondary" style={styles.editBtn}>
-                    <Edit3 size={14} /> Edit Details
-                  </button>
-                  {isEditable && (
-                    <button onClick={() => handleDelete(teacher.id)} style={styles.deleteBtn}>
-                      <Trash2 size={14} /> Remove
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+            if (isEditable) {
+              infoRows.push({
+                icon: DollarSign,
+                label: 'Salary',
+                value: `PKR ${Number(teacher.salary).toLocaleString()}`,
+                iconColor: '#10b981',
+                valueStyle: { fontWeight: '750', color: 'var(--color-primary)' }
+              });
+            }
+
+            return (
+              <InfoCard
+                key={teacher.id}
+                avatarInitial={teacher.full_name.charAt(0)}
+                name={teacher.full_name}
+                subtitle={`Joined: ${teacher.joining_date}`}
+                badgeLabel="Teacher"
+                badgeType="teacher"
+                infoRows={infoRows}
+                actions={cardActions}
+              />
+            );
+          })}
         </div>
       )}
       </div>
@@ -288,17 +294,20 @@ export default function TeachersModule({ userRole }) {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Subject Taught *</label>
-                  <select
-                    value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="form-input"
-                  >
-                    <option value="Hifz Instruction">Hifz Instruction</option>
-                    <option value="Arabic Language">Arabic Language</option>
-                    <option value="Islamic Studies">Islamic Studies</option>
-                    <option value="Mathematics & Science">Mathematics & Science</option>
-                    <option value="English Language">English Language</option>
-                  </select>
+                  <div className="select-wrapper">
+                    <select
+                      value={formData.subject}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      className="form-input"
+                    >
+                      <option value="Hifz Instruction">Hifz Instruction</option>
+                      <option value="Arabic Language">Arabic Language</option>
+                      <option value="Islamic Studies">Islamic Studies</option>
+                      <option value="Mathematics & Science">Mathematics & Science</option>
+                      <option value="English Language">English Language</option>
+                    </select>
+                    <ChevronDown size={14} className="select-arrow" />
+                  </div>
                 </div>
               </div>
 
@@ -313,10 +322,11 @@ export default function TeachersModule({ userRole }) {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="form-input"
+                      autoComplete="off"
                     />
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label className="form-label">Temporary Password *</label>
+                    <label className="form-label">Password *</label>
                     <input
                       type="password"
                       required
@@ -324,6 +334,7 @@ export default function TeachersModule({ userRole }) {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="form-input"
+                      autoComplete="new-password"
                     />
                   </div>
                 </div>
@@ -335,10 +346,11 @@ export default function TeachersModule({ userRole }) {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. +92 300 1234567"
+                    placeholder="e.g. 03001234567"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/[^0-9]/g, "") })}
                     className="form-input"
+                    maxLength={11}
                   />
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
-import { CheckSquare, Calendar, UserCheck, Search, Info, Trash2 } from 'lucide-react';
+import { CheckSquare, Calendar, UserCheck, Search, Info, Trash2, ChevronDown, Users } from 'lucide-react';
+import EmptyState from './EmptyState';
 
 export default function AttendanceModule({ userRole, user }) {
   const [activeTab, setActiveTab] = useState('student'); // 'student' | 'teacher' | 'reports'
@@ -23,6 +24,7 @@ export default function AttendanceModule({ userRole, user }) {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [reportLogs, setReportLogs] = useState([]);
   const [reportLoading, setReportLoading] = useState(false);
+  const [hasQueried, setHasQueried] = useState(false);
 
   // Load roster and dynamic status logs
   const loadRoster = async () => {
@@ -200,6 +202,7 @@ export default function AttendanceModule({ userRole, user }) {
       setReportLoading(true);
       const data = await database.attendance.listForUserInDateRange(selectedUserId, startDate, endDate);
       setReportLogs(data);
+      setHasQueried(true);
     } catch (e) {
       console.error("Error running attendance report:", e);
       alert("Failed to load report: " + e.message);
@@ -207,6 +210,11 @@ export default function AttendanceModule({ userRole, user }) {
       setReportLoading(false);
     }
   };
+
+  useEffect(() => {
+    setHasQueried(false);
+    setReportLogs([]);
+  }, [activeTab, reportRole, selectedUserId, startDate, endDate]);
 
   // Calculations
   const totalRoster = attendanceSheet.length;
@@ -310,28 +318,34 @@ export default function AttendanceModule({ userRole, user }) {
 
             <div style={styles.configItem}>
               <label style={styles.configLabel}>Role Filter</label>
-              <select
-                value={reportRole}
-                onChange={(e) => setReportRole(e.target.value)}
-                style={isReportEmpty ? styles.configInputExpanded : styles.configInput}
-              >
-                <option value="student">Student Registry</option>
-                <option value="teacher">Teachers & Staff</option>
-              </select>
+              <div className="select-wrapper">
+                <select
+                  value={reportRole}
+                  onChange={(e) => setReportRole(e.target.value)}
+                  style={isReportEmpty ? styles.configInputExpanded : styles.configInput}
+                >
+                  <option value="student">Student Registry</option>
+                  <option value="teacher">Teachers & Staff</option>
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
+              </div>
             </div>
 
             <div style={isReportEmpty ? styles.configItem : { ...styles.configItem, flex: 1 }}>
               <label style={styles.configLabel}>Select Person Profile</label>
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                style={isReportEmpty ? styles.configInputExpanded : styles.configInput}
-                disabled={reportLoading}
-              >
-                {people.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.details})</option>
-                ))}
-              </select>
+              <div className="select-wrapper">
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  style={isReportEmpty ? styles.configInputExpanded : styles.configInput}
+                  disabled={reportLoading}
+                >
+                  {people.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.details})</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
+              </div>
             </div>
 
             <div style={styles.configItem}>
@@ -360,7 +374,7 @@ export default function AttendanceModule({ userRole, user }) {
               className="btn-primary"
               style={isReportEmpty ? { width: '100%', marginTop: '0.5rem', justifyContent: 'center' } : { alignSelf: 'flex-end' }}
             >
-              Run Report Ledger
+              <Search size={16} /> Run Report Ledger
             </button>
           </div>
 
@@ -369,40 +383,46 @@ export default function AttendanceModule({ userRole, user }) {
               <div className="spinner" style={styles.spinner}></div>
               <p style={{ marginTop: 10 }}>Querying ledger logs...</p>
             </div>
-          ) : (
-            reportLogs.length > 0 && (
-              <div className="table-container" style={{ marginTop: '1.5rem' }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Attendance Status</th>
-                      {isEditable && <th style={{ textAlign: 'right' }}>Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportLogs.map((log) => (
-                      <tr key={log.id}>
-                        <td style={{ fontWeight: '600', color: 'var(--color-primary-light)' }}>{log.date}</td>
-                        <td>
-                          <span className={`badge ${log.status === 'present' ? 'success' : (log.status === 'absent' ? 'danger' : 'warning')}`}>
-                            {log.status}
-                          </span>
+          ) : reportLogs.length > 0 ? (
+            <div className="table-container" style={{ marginTop: '1.5rem' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Attendance Status</th>
+                    {isEditable && <th style={{ textAlign: 'right' }}>Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td style={{ fontWeight: '600', color: 'var(--color-primary-light)' }}>{log.date}</td>
+                      <td>
+                        <span className={`badge ${log.status === 'present' ? 'success' : (log.status === 'absent' ? 'danger' : 'warning')}`}>
+                          {log.status}
+                        </span>
+                      </td>
+                      {isEditable && (
+                        <td style={{ textAlign: 'right' }}>
+                          <button onClick={() => handleDeleteReportLog(log.id)} style={styles.deleteBtn} title="Delete record">
+                            <Trash2 size={14} /> Delete
+                          </button>
                         </td>
-                        {isEditable && (
-                          <td style={{ textAlign: 'right' }}>
-                            <button onClick={() => handleDeleteReportLog(log.id)} style={styles.deleteBtn} title="Delete record">
-                              <Trash2 size={14} /> Delete
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : hasQueried ? (
+            <div style={{ marginTop: '1.5rem' }}>
+              <EmptyState
+                icon={Calendar}
+                title="No attendance history"
+                message="No attendance records found for this profile in the selected date range."
+              />
+            </div>
+          ) : null}
         </div>
       ) : (
         <>
@@ -430,19 +450,22 @@ export default function AttendanceModule({ userRole, user }) {
             {activeTab === 'student' && (
               <div style={styles.configItem}>
                 <label style={styles.configLabel}><Info size={14} style={{ marginRight: 4 }} /> Select Class</label>
-                <select
-                  value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
-                  style={isRosterHidden ? styles.configInputExpanded : styles.configInput}
-                >
-                  <option value="Grade 1">Grade 1</option>
-                  <option value="Grade 2">Grade 2</option>
-                  <option value="Grade 3">Grade 3</option>
-                  <option value="Grade 4">Grade 4</option>
-                  <option value="Grade 5">Grade 5</option>
-                  <option value="Hifz">Hifz</option>
-                  <option value="Nazra">Nazra</option>
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    style={isRosterHidden ? styles.configInputExpanded : styles.configInput}
+                  >
+                    <option value="Grade 1">Grade 1</option>
+                    <option value="Grade 2">Grade 2</option>
+                    <option value="Grade 3">Grade 3</option>
+                    <option value="Grade 4">Grade 4</option>
+                    <option value="Grade 5">Grade 5</option>
+                    <option value="Hifz">Hifz</option>
+                    <option value="Nazra">Nazra</option>
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
+                </div>
               </div>
             )}
 
@@ -491,8 +514,8 @@ export default function AttendanceModule({ userRole, user }) {
                 <h3 style={styles.sheetTitle}>Marking Ledger Roster</h3>
                 <div style={styles.bulkActions}>
                   <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500' }}>Bulk Fill:</span>
-                  <button onClick={() => handleBulkMark('present')} style={styles.bulkBtnGreen}>Mark Present</button>
-                  <button onClick={() => handleBulkMark('absent')} style={styles.bulkBtnRed}>Mark Absent</button>
+                  <button onClick={() => handleBulkMark('present')} style={styles.bulkBtnGreen} className="btn-sm">Mark Present</button>
+                  <button onClick={() => handleBulkMark('absent')} style={styles.bulkBtnRed} className="btn-sm">Mark Absent</button>
                 </div>
               </div>
 
@@ -502,7 +525,13 @@ export default function AttendanceModule({ userRole, user }) {
                   <p style={{ marginTop: 10 }}>Fetching daily check sheets...</p>
                 </div>
               ) : filteredSheet.length === 0 ? (
-                <div style={styles.noData}>No active records registered under current settings.</div>
+                <EmptyState
+                  icon={attendanceSheet.length === 0 ? Users : Search}
+                  title={attendanceSheet.length === 0 ? "No registry records" : "No matching roster records"}
+                  message={attendanceSheet.length === 0 
+                    ? "No students or staff are registered under the current class/role selection." 
+                    : "Try adjusting your search criteria."}
+                />
               ) : (
                 <div style={styles.gridList}>
                   {filteredSheet.map((row) => (
@@ -517,6 +546,7 @@ export default function AttendanceModule({ userRole, user }) {
                         <button
                           onClick={() => handleStatusChange(row.id, 'present')}
                           disabled={isStatusDisabled(row)}
+                          className="btn-sm"
                           style={{
                             ...styles.statusBtn,
                             backgroundColor: row.status === 'present' ? 'var(--color-success)' : '#fff',
@@ -531,6 +561,7 @@ export default function AttendanceModule({ userRole, user }) {
                         <button
                           onClick={() => handleStatusChange(row.id, 'absent')}
                           disabled={isStatusDisabled(row)}
+                          className="btn-sm"
                           style={{
                             ...styles.statusBtn,
                             backgroundColor: row.status === 'absent' ? 'var(--color-danger)' : '#fff',
@@ -545,6 +576,7 @@ export default function AttendanceModule({ userRole, user }) {
                         <button
                           onClick={() => handleStatusChange(row.id, 'late')}
                           disabled={isStatusDisabled(row)}
+                          className="btn-sm"
                           style={{
                             ...styles.statusBtn,
                             backgroundColor: row.status === 'late' ? 'var(--color-warning)' : '#fff',
@@ -616,8 +648,8 @@ const styles = {
   configBar: {
     padding: '1.5rem',
     display: 'flex',
-    alignItems: 'center',
-    gap: '1.25rem',
+    alignItems: 'flex-end',
+    gap: 'var(--spacing-md)',
     marginBottom: '1.5rem',
     backgroundColor: '#fff',
     flexWrap: 'wrap'
@@ -701,7 +733,7 @@ const styles = {
   bulkActions: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem'
+    gap: 'var(--spacing-sm)'
   },
   bulkBtnGreen: {
     fontSize: '0.75rem',
@@ -732,11 +764,12 @@ const styles = {
   gridRow: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: '0.75rem 1rem',
     borderRadius: 'var(--radius-md)',
     backgroundColor: 'var(--color-bg-base)',
     border: '1px solid #f1f5f9',
-    gap: '1.25rem',
+    gap: 'var(--spacing-md)',
     flexWrap: 'wrap'
   },
   rowBio: {
@@ -757,7 +790,9 @@ const styles = {
   },
   btnGroup: {
     display: 'flex',
-    gap: '0.35rem',
+    gap: 'var(--spacing-xs)',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     flexWrap: 'wrap'
   },
   statusBtn: {
@@ -771,7 +806,7 @@ const styles = {
   },
   sheetFooter: {
     borderTop: '1px solid var(--color-border)',
-    paddingTop: '1.25rem',
+    paddingTop: 'var(--spacing-md)',
     display: 'flex',
     justifyContent: 'flex-end'
   },

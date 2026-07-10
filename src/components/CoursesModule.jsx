@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { BookOpen, PlusCircle, Edit3, Trash2, X, GraduationCap } from 'lucide-react';
+import { BookOpen, PlusCircle, Edit3, Trash2, X, GraduationCap, ChevronDown } from 'lucide-react';
 
 export default function CoursesModule({ userRole }) {
   const [courses, setCourses] = useState([]);
@@ -205,16 +205,19 @@ export default function CoursesModule({ userRole }) {
 
               <div className="form-group">
                 <label className="form-label">Assign Instructor *</label>
-                <select
-                  value={formData.teacher_id}
-                  onChange={(e) => setFormData({ ...formData, teacher_id: e.target.value })}
-                  className="form-input"
-                >
-                  <option value="">Unassigned</option>
-                  {teachers.map(t => (
-                    <option key={t.id} value={t.id}>{t.full_name} ({t.subject})</option>
-                  ))}
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    value={formData.teacher_id}
+                    onChange={(e) => setFormData({ ...formData, teacher_id: e.target.value })}
+                    className="form-input"
+                  >
+                    <option value="">Unassigned</option>
+                    {teachers.map(t => (
+                      <option key={t.id} value={t.id}>{t.full_name} ({t.subject})</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
+                </div>
               </div>
 
               <div style={styles.modalActions}>

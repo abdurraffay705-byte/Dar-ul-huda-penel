@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { FileText, PlusCircle, Trash2, Calendar, AlertTriangle, BellRing } from 'lucide-react';
+import { FileText, PlusCircle, Trash2, Calendar, AlertTriangle, BellRing, Edit3, ChevronDown } from 'lucide-react';
+import EmptyState from './EmptyState';
+import InfoCard from './InfoCard';
+
 
 export default function CMSModule({ userRole }) {
   const [notices, setNotices] = useState([]);
@@ -11,6 +14,7 @@ export default function CMSModule({ userRole }) {
   const [content, setContent] = useState('');
   const [urgency, setUrgency] = useState('Medium');
   const [submitting, setSubmitting] = useState(false);
+  const [editingNotice, setEditingNotice] = useState(null);
 
   const loadNotices = async () => {
     try {
@@ -30,6 +34,13 @@ export default function CMSModule({ userRole }) {
     })();
   }, []);
 
+  const handleOpenEdit = (notice) => {
+    setTitle(notice.title || '');
+    setContent(notice.content || '');
+    setUrgency(notice.urgency || 'Medium');
+    setEditingNotice(notice);
+  };
+
   const handlePostNotice = async (e) => {
     e.preventDefault();
     if (!title || !content) {
@@ -39,21 +50,34 @@ export default function CMSModule({ userRole }) {
 
     try {
       setSubmitting(true);
-      const newNotice = {
+      const noticePayload = {
         title,
         content,
         urgency,
-        published_date: new Date().toISOString().split('T')[0]
+        published_date: editingNotice ? editingNotice.published_date : new Date().toISOString().split('T')[0]
       };
 
-      const res = await database.cms.create(newNotice);
-      if (res.success) {
-        setTitle('');
-        setContent('');
-        setUrgency('Medium');
-        loadNotices();
+      if (editingNotice) {
+        const res = await database.cms.update(editingNotice.id, noticePayload);
+        if (res.success) {
+          setTitle('');
+          setContent('');
+          setUrgency('Medium');
+          setEditingNotice(null);
+          loadNotices();
+        } else {
+          alert("Failed to update notice: " + res.error);
+        }
       } else {
-        alert("Failed to publish announcement: " + res.error);
+        const res = await database.cms.create(noticePayload);
+        if (res.success) {
+          setTitle('');
+          setContent('');
+          setUrgency('Medium');
+          loadNotices();
+        } else {
+          alert("Failed to publish announcement: " + res.error);
+        }
       }
     } catch (e) {
       console.error("Error creating notice:", e);
@@ -85,7 +109,7 @@ export default function CMSModule({ userRole }) {
         {/* PUBLISH NOTICE FORM — full width, always visible to editors */}
         {isEditable ? (
           <div className="glass-panel" style={styles.editorBox}>
-            <h3 style={styles.boxTitle}><PlusCircle size={16} color="var(--color-accent)" style={{ marginRight: 6 }} /> Publish Notice</h3>
+           <h3 style={styles.boxTitle}><PlusCircle size={16} color="var(--color-accent)" style={{ marginRight: 6 }} /> {editingNotice ? 'Edit Announcement Notice' : 'Publish Notice'}</h3>
             
             <form onSubmit={handlePostNotice} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
               <div className="form-group">
@@ -102,16 +126,19 @@ export default function CMSModule({ userRole }) {
 
               <div className="form-group">
                 <label className="form-label">Urgency Priority Level</label>
-                <select
-                  value={urgency}
-                  onChange={(e) => setUrgency(e.target.value)}
-                  className="form-input"
-                  style={{ cursor: 'pointer' }}
-                >
-                  <option value="High">🔴 High Priority (Red Alert banner)</option>
-                  <option value="Medium">🟡 Medium Priority (Gold info banner)</option>
-                  <option value="Low">🔵 Low Priority (Standard announcement)</option>
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    value={urgency}
+                    onChange={(e) => setUrgency(e.target.value)}
+                    className="form-input"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <option value="High">🔴 High Priority (Red Alert banner)</option>
+                    <option value="Medium">🟡 Medium Priority (Gold info banner)</option>
+                    <option value="Low">🔵 Low Priority (Standard announcement)</option>
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
+                </div>
               </div>
 
               <div className="form-group">
@@ -127,13 +154,29 @@ export default function CMSModule({ userRole }) {
                 />
               </div>
 
+              {editingNotice && (
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setTitle('');
+                    setContent('');
+                    setUrgency('Medium');
+                    setEditingNotice(null);
+                  }}
+                  className="btn-secondary"
+                  style={{ width: '100%', justifyContent: 'center', marginBottom: '0.45rem' }}
+                >
+                  Cancel Edit
+                </button>
+              )}
+
               <button 
                 type="submit" 
                 disabled={submitting} 
                 className="btn-accent" 
                 style={{ width: '100%', justifyContent: 'center' }}
               >
-                <BellRing size={16} /> {submitting ? 'Broadcasting notice...' : 'Publish Announcement'}
+                <BellRing size={16} /> {submitting ? 'Broadcasting notice...' : (editingNotice ? 'Save Changes' : 'Publish Announcement')}
               </button>
             </form>
           </div>
@@ -147,56 +190,61 @@ export default function CMSModule({ userRole }) {
           </div>
         )}
 
-        {/* NOTICES TIMELINE — only shown while loading or when notices exist */}
-        {(loading || notices.length > 0) && (
-          <div style={styles.timelineArea}>
-            <h3 style={styles.boxTitle}><BellRing size={16} color="var(--color-primary-light)" style={{ marginRight: 6 }} /> Active Announcements</h3>
+        {/* NOTICES TIMELINE — always visible */}
+        <div style={styles.timelineArea}>
+          <h3 style={styles.boxTitle}><BellRing size={16} color="var(--color-primary-light)" style={{ marginRight: 6 }} /> Active Announcements</h3>
 
-            {loading ? (
-              <div style={styles.innerLoader}>
-                <div className="spinner" style={styles.spinner}></div>
-                <p style={{ marginTop: 10 }}>Loading timeline board...</p>
+          {loading ? (
+            <div style={styles.innerLoader}>
+              <div className="spinner" style={styles.spinner}></div>
+              <p style={{ marginTop: 10 }}>Loading timeline board...</p>
+            </div>
+          ) : notices.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="No announcements published"
+              message="Publish a new announcement notice to display on the board."
+            />
+          ) : (
+            <div style={styles.noticeStream}>
+                {notices.map((n) => {
+                  const cardActions = [];
+                  if (isAdmin) {
+                    cardActions.push({
+                      label: 'Edit Notice',
+                      icon: Edit3,
+                      onClick: () => handleOpenEdit(n),
+                      variant: 'secondary'
+                    });
+                    cardActions.push({
+                      label: 'Pull Down Announcement',
+                      icon: Trash2,
+                      onClick: () => handleDelete(n.id),
+                      variant: 'danger'
+                    });
+                  }
+
+                  return (
+                    <InfoCard
+                      key={n.id}
+                      name={n.title}
+                      badgeLabel={`${n.urgency} Urgency`}
+                      badgeType={n.urgency}
+                      description={n.content}
+                      infoRows={[
+                        { icon: Calendar, label: 'Published Date', value: n.published_date }
+                      ]}
+                      actions={cardActions}
+                      style={{
+                        borderLeft: `5px solid ${n.urgency === 'High' ? 'var(--color-danger)' : (n.urgency === 'Medium' ? 'var(--color-warning)' : 'var(--color-info)')}`,
+                        backgroundColor: n.urgency === 'High' ? '#fffbfb' : '#ffffff'
+                      }}
+                    />
+                  );
+                })}
               </div>
-            ) : (
-              <div style={styles.noticeStream}>
-                {notices.map((n) => (
-                  <div 
-                    key={n.id} 
-                    className="glass-panel" 
-                    style={{
-                      ...styles.noticeCard,
-                      borderLeftColor: n.urgency === 'High' ? 'var(--color-danger)' : (n.urgency === 'Medium' ? 'var(--color-warning)' : 'var(--color-info)'),
-                      backgroundColor: n.urgency === 'High' ? '#fffbfb' : '#ffffff'
-                    }}
-                  >
-                    <div style={styles.noticeMeta}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className={`badge ${n.urgency === 'High' ? 'danger' : (n.urgency === 'Medium' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>
-                          {n.urgency} Urgency
-                        </span>
-                        {n.urgency === 'High' && <AlertTriangle size={14} color="var(--color-danger)" className="fade-in" style={{ animation: 'spin 4s linear infinite' }} />}
-                      </div>
-                      <span style={styles.noticeDate}>
-                        <Calendar size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {n.published_date}
-                      </span>
-                    </div>
-
-                    <h3 style={styles.noticeTitle}>{n.title}</h3>
-                    <p style={styles.noticeBody}>{n.content}</p>
-
-                    {isAdmin && (
-                      <div style={styles.cardActions}>
-                        <button onClick={() => handleDelete(n.id)} style={styles.deleteBtn}>
-                          <Trash2 size={13} style={{ marginRight: 4 }} /> Pull Down Announcement
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -305,6 +353,20 @@ const styles = {
     borderRadius: '4px',
     backgroundColor: 'rgba(239, 68, 68, 0.05)',
     border: '1px solid rgba(239, 68, 68, 0.1)',
+    transition: 'all 0.15s'
+  },
+  editBtn: {
+    background: 'none',
+    color: '#059669',
+    fontSize: '0.75rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0.2rem 0.5rem',
+    borderRadius: '4px',
+    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+    border: '1px solid rgba(16, 185, 129, 0.1)',
     transition: 'all 0.15s'
   },
   innerLoader: {

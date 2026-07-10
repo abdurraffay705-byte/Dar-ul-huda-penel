@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { database } from '../supabaseClient';
+import { useNavigate } from 'react-router-dom';
+import { database, supabase } from '../supabaseClient';
 import { 
   Users, 
   UserSquare2, 
@@ -9,8 +10,12 @@ import {
   TrendingUp,
   Bell
 } from 'lucide-react';
+import EmptyState from './EmptyState';
+import Badge from './Badge';
+
 
 export default function DashboardHome({ setActiveTab }) {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     studentsCount: 0,
     teachersCount: 0,
@@ -20,6 +25,14 @@ export default function DashboardHome({ setActiveTab }) {
   const [notices, setNotices] = useState([]);
   const [recentFees, setRecentFees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState([
+    { month: 'Jan', amount: 0 },
+    { month: 'Feb', amount: 0 },
+    { month: 'Mar', amount: 0 },
+    { month: 'Apr', amount: 0 },
+    { month: 'May', amount: 0 },
+    { month: 'Jun', amount: 0 }
+  ]);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -73,6 +86,45 @@ export default function DashboardHome({ setActiveTab }) {
         // Set top 4 recent fee payments
         feesPaymentsAccumulator.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
         setRecentFees(feesPaymentsAccumulator.slice(0, 4));
+
+        // Fetch all fee payments from Supabase for the trend chart
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from('fee_payments')
+          .select('amount_paid, payment_date');
+
+        if (paymentsError) throw paymentsError;
+
+        const monthlySums = {
+          'Jan': 0,
+          'Feb': 0,
+          'Mar': 0,
+          'Apr': 0,
+          'May': 0,
+          'Jun': 0
+        };
+
+        if (paymentsData) {
+          paymentsData.forEach(p => {
+            if (!p.payment_date) return;
+            const parts = p.payment_date.split('-');
+            const year = parseInt(parts[0], 10);
+            const monthIndex = parseInt(parts[1], 10) - 1;
+            
+            if (year === 2026) {
+              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+              const monthName = monthNames[monthIndex];
+              if (monthlySums[monthName] !== undefined) {
+                monthlySums[monthName] += Number(p.amount_paid);
+              }
+            }
+          });
+        }
+
+        const constructedChartData = Object.keys(monthlySums).map(month => ({
+          month,
+          amount: monthlySums[month]
+        }));
+        setChartData(constructedChartData);
       } catch (e) {
         console.error("Error loading dashboard metrics:", e);
       } finally {
@@ -92,15 +144,7 @@ export default function DashboardHome({ setActiveTab }) {
     );
   }
 
-  // Chart values
-  const chartData = [
-    { month: 'Jan', amount: 15000 },
-    { month: 'Feb', amount: 18000 },
-    { month: 'Mar', amount: 22000 },
-    { month: 'Apr', amount: 20000 },
-    { month: 'May', amount: 28000 },
-    { month: 'Jun', amount: stats.feesCollected > 0 ? stats.feesCollected : 32000 }
-  ];
+  // Chart parameters
   
   const maxAmount = Math.max(...chartData.map(d => d.amount));
   const chartHeight = 150;
@@ -120,7 +164,7 @@ export default function DashboardHome({ setActiveTab }) {
 
       {/* METRIC GRID */}
       <div className="dashboard-grid">
-        <div className="glass-panel stat-card" onClick={() => setActiveTab('students')} style={{ cursor: 'pointer' }}>
+        <div className="glass-panel stat-card" onClick={() => { setActiveTab('students'); navigate('/students'); }} style={{ cursor: 'pointer' }}>
           <div>
             <span style={styles.statLabel}>Total Students</span>
             <h2 style={styles.statValue}>{stats.studentsCount}</h2>
@@ -131,7 +175,7 @@ export default function DashboardHome({ setActiveTab }) {
           </div>
         </div>
 
-        <div className="glass-panel stat-card" onClick={() => setActiveTab('teachers')} style={{ cursor: 'pointer' }}>
+        <div className="glass-panel stat-card" onClick={() => { setActiveTab('teachers'); navigate('/teachers'); }} style={{ cursor: 'pointer' }}>
           <div>
             <span style={styles.statLabel}>Instructors / Staff</span>
             <h2 style={styles.statValue}>{stats.teachersCount}</h2>
@@ -142,7 +186,7 @@ export default function DashboardHome({ setActiveTab }) {
           </div>
         </div>
 
-        <div className="glass-panel stat-card" onClick={() => setActiveTab('fees')} style={{ cursor: 'pointer' }}>
+        <div className="glass-panel stat-card" onClick={() => { setActiveTab('fees'); navigate('/fees'); }} style={{ cursor: 'pointer' }}>
           <div>
             <span style={styles.statLabel}>Tuition Fees Received</span>
             <h2 style={styles.statValue}>PKR {stats.feesCollected.toLocaleString()}</h2>
@@ -153,7 +197,7 @@ export default function DashboardHome({ setActiveTab }) {
           </div>
         </div>
 
-        <div className="glass-panel stat-card" onClick={() => setActiveTab('donations')} style={{ cursor: 'pointer' }}>
+        <div className="glass-panel stat-card" onClick={() => { setActiveTab('donations'); navigate('/donations'); }} style={{ cursor: 'pointer' }}>
           <div>
             <span style={styles.statLabel}>Donation Funds</span>
             <h2 style={styles.statValue}>PKR {stats.donationsTotal.toLocaleString()}</h2>
@@ -243,14 +287,18 @@ export default function DashboardHome({ setActiveTab }) {
         <div className="glass-panel" style={styles.recentCard}>
           <div style={styles.cardHeader}>
             <h3 style={styles.cardTitle}>Recent Payments Ledger</h3>
-            <button onClick={() => setActiveTab('fees')} style={styles.viewAllBtn}>
+            <button onClick={() => { setActiveTab('fees'); navigate('/fees'); }} style={styles.viewAllBtn}>
               Manage Fees
             </button>
           </div>
           
           <div style={styles.listContainer}>
             {recentFees.length === 0 ? (
-              <p style={styles.emptyText}>No recent payments registered.</p>
+              <EmptyState
+                icon={CreditCard}
+                title="No recent payments"
+                message="No payment transactions have been logged in the ledger yet."
+              />
             ) : (
               recentFees.map((pay) => (
                 <div key={pay.id} style={styles.listItem}>
@@ -263,9 +311,7 @@ export default function DashboardHome({ setActiveTab }) {
                   <div style={{ textAlign: 'right' }}>
                     <span style={styles.listItemAmount}>PKR {Number(pay.amount_paid).toLocaleString()}</span>
                     <div>
-                      <span className="badge success" style={{ fontSize: '0.65rem', padding: '0.05rem 0.3rem' }}>
-                        Received
-                      </span>
+                      <Badge label="Received" type="success" />
                     </div>
                   </div>
                 </div>
@@ -279,7 +325,7 @@ export default function DashboardHome({ setActiveTab }) {
       <div className="glass-panel" style={styles.noticesCard}>
         <div style={styles.cardHeader}>
           <h3 style={styles.cardTitle}><Bell size={18} style={{ verticalAlign: 'middle', marginRight: 8, color: 'var(--color-accent)' }} /> Active Notices & Announcements</h3>
-          <button onClick={() => setActiveTab('cms')} style={styles.viewAllBtn}>
+          <button onClick={() => { setActiveTab('cms'); navigate('/cms'); }} style={styles.viewAllBtn}>
             Notice Editor
           </button>
         </div>

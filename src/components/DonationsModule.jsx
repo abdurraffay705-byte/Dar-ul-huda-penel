@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X, Trash2 } from 'lucide-react';
+import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X, Trash2, Edit3, ChevronDown } from 'lucide-react';
+import EmptyState from './EmptyState';
+import InfoCard from './InfoCard';
+
 
 export default function DonationsModule({ userRole }) {
   const [donations, setDonations] = useState([]);
@@ -10,6 +13,7 @@ export default function DonationsModule({ userRole }) {
   
   // Modals & Forms
   const [isRecordOpen, setIsRecordOpen] = useState(false);
+  const [editingDonation, setEditingDonation] = useState(null);
   const [formData, setFormData] = useState({
     donor_name: '',
     amount: '',
@@ -42,6 +46,18 @@ export default function DonationsModule({ userRole }) {
       source: prefilledSource,
       payment_mode: 'bank'
     });
+    setEditingDonation(null);
+    setIsRecordOpen(true);
+  };
+
+  const handleOpenEditForm = (donation) => {
+    setFormData({
+      donor_name: donation.donor_name || '',
+      amount: donation.amount || '',
+      source: donation.source || 'General Sadqah Fund',
+      payment_mode: donation.payment_mode || 'bank'
+    });
+    setEditingDonation(donation);
     setIsRecordOpen(true);
   };
 
@@ -54,12 +70,23 @@ export default function DonationsModule({ userRole }) {
       payment_mode: formData.payment_mode.toLowerCase()
     };
 
-    const res = await database.donations.create(cleanDonation);
-    if (res.success) {
-      setIsRecordOpen(false);
-      loadDonations();
+    if (editingDonation) {
+      const res = await database.donations.update(editingDonation.id, cleanDonation);
+      if (res.success) {
+        setIsRecordOpen(false);
+        setEditingDonation(null);
+        loadDonations();
+      } else {
+        alert("Failed to update donation: " + res.error);
+      }
     } else {
-      alert("Failed to log charity donation: " + res.error);
+      const res = await database.donations.create(cleanDonation);
+      if (res.success) {
+        setIsRecordOpen(false);
+        loadDonations();
+      } else {
+        alert("Failed to log charity donation: " + res.error);
+      }
     }
   };
 
@@ -164,9 +191,7 @@ export default function DonationsModule({ userRole }) {
       </div>
 
       {/* DONOR REGISTRY LEDGER */}
-      {(!loading && filteredDonations.length === 0) ? null : (
-        <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
-      )}
+      <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
 
       {/* SEARCH AND FILTERS */}
       <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
@@ -182,60 +207,74 @@ export default function DonationsModule({ userRole }) {
         </div>
 
         <div style={styles.filtersGroup} className="filter-bar__controls">
-          <select 
-            value={sourceFilter} 
-            onChange={(e) => setSourceFilter(e.target.value)} 
-            style={styles.filterSelect}
-          >
-            <option value="">All Sources</option>
-            <option value="General Sadqah Fund">General Sadqah Fund</option>
-            <option value="Orphan Sponsorship">Orphan Sponsorship</option>
-            <option value="Mosque Hall Extension">Mosque Hall Extension</option>
-          </select>
+          <div className="select-wrapper" style={{ width: 'auto' }}>
+            <select 
+              value={sourceFilter} 
+              onChange={(e) => setSourceFilter(e.target.value)} 
+              style={styles.filterSelect}
+            >
+              <option value="">All Sources</option>
+              <option value="General Sadqah Fund">General Sadqah Fund</option>
+              <option value="Orphan Sponsorship">Orphan Sponsorship</option>
+              <option value="Mosque Hall Extension">Mosque Hall Extension</option>
+            </select>
+            <ChevronDown size={14} className="select-arrow" />
+          </div>
         </div>
       </div>
 
-      {(!loading && filteredDonations.length === 0) ? null : loading ? (
+      {loading ? (
         <div style={styles.innerLoader}>
           <div className="spinner" style={styles.spinner}></div>
           <p style={{ marginTop: 10 }}>Auditing donor sheets...</p>
         </div>
+      ) : filteredDonations.length === 0 ? (
+        <EmptyState
+          icon={donations.length === 0 ? HeartHandshake : Search}
+          title={donations.length === 0 ? "No donations recorded" : "No matching donations found"}
+          message={donations.length === 0 ? "Record a new donation transaction to get started." : "Try clearing filters or adjusting your search query."}
+        />
       ) : (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Donor Name</th>
-                <th>Charity Source</th>
-                <th>Payment Mode</th>
-                <th>Receipt Date</th>
-                <th style={{ textAlign: 'right' }}>Amount Received</th>
-                {isEditable && <th style={{ textAlign: 'right' }}>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDonations.map((donation) => (
-                <tr key={donation.id}>
-                  <td style={{ fontWeight: '700' }}>{donation.donor_name}</td>
-                  <td>
-                    <span className="badge info" style={{ fontSize: '0.7rem' }}>{donation.source}</span>
-                  </td>
-                  <td style={{ textTransform: 'uppercase' }}>{donation.payment_mode}</td>
-                  <td><Calendar size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {donation.created_at ? donation.created_at.substring(0, 10) : '-'}</td>
-                  <td style={{ textAlign: 'right', fontWeight: '800', color: 'var(--color-primary)' }}>
-                    PKR {Number(donation.amount).toLocaleString()}
-                  </td>
-                  {isEditable && (
-                    <td style={{ textAlign: 'right' }}>
-                      <button onClick={() => handleDelete(donation.id)} style={styles.deleteBtn} title="Delete donation">
-                        <Trash2 size={14} /> Delete
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="info-card-grid">
+          {filteredDonations.map((donation) => {
+            const cardActions = [];
+            if (isEditable) {
+              cardActions.push({
+                label: 'Edit Details',
+                icon: Edit3,
+                onClick: () => handleOpenEditForm(donation),
+                variant: 'secondary'
+              });
+              cardActions.push({
+                label: 'Delete',
+                icon: Trash2,
+                onClick: () => handleDelete(donation.id),
+                variant: 'danger'
+              });
+            }
+
+            return (
+              <InfoCard
+                key={donation.id}
+                avatarInitial={donation.donor_name.charAt(0)}
+                name={donation.donor_name}
+                badgeLabel={donation.payment_mode}
+                badgeType={donation.payment_mode}
+                infoRows={[
+                  { icon: HeartHandshake, label: 'Charity Source', value: donation.source },
+                  { icon: Calendar, label: 'Receipt Date', value: donation.created_at ? donation.created_at.substring(0, 10) : '-' },
+                  { 
+                    icon: DollarSign, 
+                    label: 'Amount', 
+                    value: `PKR ${Number(donation.amount).toLocaleString()}`,
+                    iconColor: 'var(--color-primary)',
+                    valueStyle: { fontWeight: '800', color: 'var(--color-primary)' }
+                  }
+                ]}
+                actions={cardActions}
+              />
+            );
+          })}
         </div>
       )}
       </div>
@@ -246,7 +285,7 @@ export default function DonationsModule({ userRole }) {
         <div className="standalone-form-container fade-in">
           <div className="glass-panel fade-in modal-card">
             <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Record Sadqah / Zakat Donation</h3>
+              <h3 style={styles.modalTitle}>{editingDonation ? 'Update Donation Entry' : 'Record Sadqah / Zakat Donation'}</h3>
               <button onClick={() => setIsRecordOpen(false)} style={styles.closeBtn} className="btn-icon-only">
                 <X size={18} />
               </button>
@@ -268,15 +307,18 @@ export default function DonationsModule({ userRole }) {
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Donation Source Campaign *</label>
-                  <select
-                    value={formData.source}
-                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                    className="form-input"
-                  >
-                    <option value="General Sadqah Fund">General Sadqah Fund</option>
-                    <option value="Orphan Sponsorship">Orphan Sponsorship</option>
-                    <option value="Mosque Hall Extension">Mosque Hall Extension</option>
-                  </select>
+                  <div className="select-wrapper">
+                    <select
+                      value={formData.source}
+                      onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                      className="form-input"
+                    >
+                      <option value="General Sadqah Fund">General Sadqah Fund</option>
+                      <option value="Orphan Sponsorship">Orphan Sponsorship</option>
+                      <option value="Mosque Hall Extension">Mosque Hall Extension</option>
+                    </select>
+                    <ChevronDown size={14} className="select-arrow" />
+                  </div>
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Amount (PKR) *</label>
@@ -293,15 +335,18 @@ export default function DonationsModule({ userRole }) {
 
               <div className="form-group">
                 <label className="form-label">Payment Mode *</label>
-                <select
-                  value={formData.payment_mode}
-                  onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
-                  className="form-input"
-                >
-                  <option value="bank">Bank Transfer</option>
-                  <option value="cash">Cash</option>
-                  <option value="online">Easypaisa / JazzCash / Online</option>
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    value={formData.payment_mode}
+                    onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
+                    className="form-input"
+                  >
+                    <option value="bank">Bank Transfer</option>
+                    <option value="cash">Cash</option>
+                    <option value="online">Easypaisa / JazzCash / Online</option>
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
+                </div>
               </div>
 
               <div style={styles.modalActions}>
@@ -309,7 +354,7 @@ export default function DonationsModule({ userRole }) {
                   Cancel
                 </button>
                 <button type="submit" className="btn-accent">
-                  Post Donation
+                  {editingDonation ? 'Save Changes' : 'Post Donation'}
                 </button>
               </div>
             </form>
@@ -559,6 +604,20 @@ const styles = {
     backgroundColor: 'rgba(239, 68, 68, 0.08)',
     color: 'var(--color-danger)',
     border: '1px solid rgba(239, 68, 68, 0.15)',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    fontWeight: '500',
+    transition: 'all 0.15s'
+  },
+  editBtn: {
+    padding: '0.35rem 0.6rem',
+    fontSize: '0.78rem',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    color: '#059669',
+    border: '1px solid rgba(16, 185, 129, 0.15)',
     borderRadius: 'var(--radius-sm)',
     cursor: 'pointer',
     display: 'inline-flex',

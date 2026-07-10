@@ -37,6 +37,12 @@
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 18px;
+
+  /* ── Spacing Tokens ── */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
 }
 
 * {
@@ -244,6 +250,14 @@ button, input, select, textarea {
   color: var(--color-text-main);
 }
 
+/* Small button helper for compact layouts (like list items/bulk actions) */
+button.btn-sm {
+  padding: 6px 12px !important;
+  font-size: 0.78rem !important;
+  gap: var(--spacing-xs) !important;
+  min-height: unset !important;
+}
+
 /* Input elements */
 .form-group {
   margin-bottom: 1.2rem;
@@ -353,6 +367,13 @@ select.form-input {
 }
 
 /* Custom layout classes to replace inline styles with media queries */
+.info-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
 .dashboard-middle-section {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
@@ -668,5 +689,80 @@ button svg {
     padding: 8px 6px !important;
     min-width: 70px;
   }
+}
+
+/* ── Panel-wide custom select dropdowns ── */
+.select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+}
+
+.select-wrapper select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  padding-right: 2.5rem !important; /* Ensure enough room for custom arrow */
+  cursor: pointer;
+}
+
+.select-wrapper select::-ms-expand {
+  display: none;
+}
+
+.select-wrapper .select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none; /* Let click pass through to select element */
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure wrappers inside filter controls are responsive on mobile */
+@media (max-width: 640px) {
+  .filter-bar__controls .select-wrapper {
+    width: 100% !important;
+  }
+}
+
+/* ── Shared Empty State block styling ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  color: var(--color-text-muted);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.empty-state-icon {
+  color: #94a3b8; /* Muted gray */
+  margin-bottom: 1rem;
+}
+
+.empty-state-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-message {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  max-width: 420px;
+  line-height: 1.5;
 }
 
