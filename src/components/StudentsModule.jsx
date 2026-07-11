@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, MapPin, Calendar, CheckSquare, ChevronDown, GraduationCap } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, MapPin, Calendar, CheckSquare, ChevronDown, GraduationCap, User } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 import Badge from './Badge';
