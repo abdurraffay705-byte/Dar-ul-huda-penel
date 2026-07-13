@@ -111,10 +111,10 @@ export default function CMSModule({ userRole }) {
           <div className="glass-panel" style={styles.editorBox}>
            <h3 style={styles.boxTitle}><PlusCircle size={16} color="var(--color-accent)" style={{ marginRight: 6 }} /> {editingNotice ? 'Edit Announcement Notice' : 'Publish Notice'}</h3>
             
-            <form onSubmit={handlePostNotice} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <form autoComplete="off" onSubmit={handlePostNotice} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
               <div className="form-group">
                 <label className="form-label">Announcement Title *</label>
-                <input
+                <input autoComplete="off"
                   type="text"
                   required
                   placeholder="e.g. Eid Holidays Announcement"

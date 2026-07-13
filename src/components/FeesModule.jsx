@@ -277,7 +277,7 @@ const handlePrint = () => {
       <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
         <div style={styles.searchBox} className="filter-bar__search">
           <Search size={16} color="#64748b" />
-          <input
+          <input autoComplete="off"
             type="text"
             placeholder="Search by student name or roll..."
             value={search}
@@ -413,7 +413,7 @@ const handlePrint = () => {
               </button>
             </div>
 
-            <form onSubmit={handleInvoiceSubmit} style={styles.modalForm}>
+            <form autoComplete="off" onSubmit={handleInvoiceSubmit} style={styles.modalForm}>
                 <div className="form-group">
                   <label className="form-label">Status *</label>
                   <div className="select-wrapper">
@@ -447,7 +447,7 @@ const handlePrint = () => {
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Invoice Amount (PKR) *</label>
-                  <input
+                  <input autoComplete="off"
                     type="number"
                     required
                     value={invoiceForm.amount}
@@ -457,7 +457,7 @@ const handlePrint = () => {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Due Date *</label>
-                  <input
+                  <input autoComplete="off"
                     type="date"
                     required
                     value={invoiceForm.due_date}
@@ -498,7 +498,7 @@ const handlePrint = () => {
               </button>
             </div>
 
-            <form onSubmit={handlePaymentSubmit} style={styles.modalForm}>
+            <form autoComplete="off" onSubmit={handlePaymentSubmit} style={styles.modalForm}>
               <div className="form-group">
                 <label className="form-label">Select Fee Invoice *</label>
                 <div className="select-wrapper">
@@ -518,7 +518,7 @@ const handlePrint = () => {
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Amount Paid (PKR) *</label>
-                  <input
+                  <input autoComplete="off"
                     type="number"
                     required
                     value={paymentForm.amount_paid}
@@ -528,7 +528,7 @@ const handlePrint = () => {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Payment Date *</label>
-                  <input
+                  <input autoComplete="off"
                     type="date"
                     required
                     value={paymentForm.payment_date}

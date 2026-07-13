@@ -229,8 +229,11 @@ export const database = {
     },
 
     delete: async (id) => {
-      const { error } = await supabase.from('users').delete().eq('id', id);
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: id }
+      });
       if (error) return { success: false, error: error.message };
+      if (data && data.error) return { success: false, error: data.error };
       return { success: true };
     }
   },
@@ -314,8 +317,11 @@ export const database = {
 
       if (fetchErr) return { success: false, error: fetchErr.message };
 
-      const { error } = await supabase.from('users').delete().eq('id', data.user_id);
+      const { data: funcData, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: data.user_id }
+      });
       if (error) return { success: false, error: error.message };
+      if (funcData && funcData.error) return { success: false, error: funcData.error };
       return { success: true };
     }
   },
@@ -393,8 +399,11 @@ export const database = {
         .single();
       if (fetchErr) return { success: false, error: fetchErr.message };
 
-      const { error } = await supabase.from('users').delete().eq('id', data.user_id);
+      const { data: funcData, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: data.user_id }
+      });
       if (error) return { success: false, error: error.message };
+      if (funcData && funcData.error) return { success: false, error: funcData.error };
       return { success: true };
     }
   },

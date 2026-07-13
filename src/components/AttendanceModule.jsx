@@ -350,7 +350,7 @@ export default function AttendanceModule({ userRole, user }) {
 
             <div style={styles.configItem}>
               <label style={styles.configLabel}>Start Date</label>
-              <input
+              <input autoComplete="off"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -360,7 +360,7 @@ export default function AttendanceModule({ userRole, user }) {
 
             <div style={styles.configItem}>
               <label style={styles.configLabel}>End Date</label>
-              <input
+              <input autoComplete="off"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -439,7 +439,7 @@ export default function AttendanceModule({ userRole, user }) {
             
             <div style={styles.configItem}>
               <label style={styles.configLabel}><Calendar size={14} style={{ marginRight: 4 }} /> Date Ledger</label>
-              <input
+              <input autoComplete="off"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
@@ -471,7 +471,7 @@ export default function AttendanceModule({ userRole, user }) {
 
             <div style={isRosterHidden ? styles.configItem : { ...styles.configItem, flex: 1, minWidth: '180px' }}>
               <label style={styles.configLabel}><Search size={14} style={{ marginRight: 4 }} /> Search Registry</label>
-              <input
+              <input autoComplete="off"
                 type="text"
                 placeholder="Search by name, roll/employee id..."
                 value={searchTerm}

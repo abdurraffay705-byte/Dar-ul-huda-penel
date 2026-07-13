@@ -50,7 +50,7 @@ export default function Login({ onLogin }) {
             <label className="form-label" style={styles.label}>
               <Mail size={16} style={{ marginRight: 6 }} /> Email Address
             </label>
-            <input
+            <input autoComplete="off"
               type="email"
               placeholder="e.g., admin@darulhuda.edu"
               value={email}
@@ -66,7 +66,7 @@ export default function Login({ onLogin }) {
             <label className="form-label" style={styles.label}>
               <Lock size={16} style={{ marginRight: 6 }} /> Password
             </label>
-            <input
+            <input autoComplete="off"
               type="password"
               placeholder="••••••••"
               value={password}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { database } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Phone, Users as UsersIcon, ChevronDown, Loader2 } from 'lucide-react';
+import { database, supabase } from '../supabaseClient';
+import { Search, UserPlus, Edit3, Trash2, X, Phone, Users as UsersIcon, ChevronDown, Loader2, Mail, Fingerprint, Calendar, GraduationCap, User, MapPin, Eye, EyeOff } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 
@@ -16,6 +16,8 @@ export default function UsersModule({ userRole }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState(null);
 
   const blankForm = {
     full_name: '',
@@ -27,10 +29,25 @@ export default function UsersModule({ userRole }) {
     father_name: '',
     mother_name: '',
     address: '',
-    cnic: ''
+    cnic: '',
+    password: ''
   };
 
   const [formData, setFormData] = useState(blankForm);
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const generatePassword = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+    let pwd = "";
+    for (let i = 0; i < 12; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData(prev => ({ ...prev, password: pwd }));
+    setShowPassword(true);
+  };
 
   const loadUsers = async () => {
     try {
@@ -53,8 +70,9 @@ export default function UsersModule({ userRole }) {
   }, []);
 
   const handleOpenCreateForm = () => {
-    setFormData(blankForm);
+    setFormData({ ...blankForm, password: '' });
     setEditingUser(null);
+    setShowPassword(false);
     setIsFormOpen(true);
   };
 
@@ -69,7 +87,8 @@ export default function UsersModule({ userRole }) {
       father_name: user.father_name || '',
       mother_name: user.mother_name || '',
       address: user.address || '',
-      cnic: user.cnic || ''
+      cnic: user.cnic || '',
+      password: ''
     });
     setEditingUser(user);
     setIsFormOpen(true);
@@ -91,20 +110,40 @@ export default function UsersModule({ userRole }) {
     try {
       setIsSubmitting(true);
       if (editingUser) {
-        const res = await database.users.update(editingUser.id, formData);
+        const { password, ...profileData } = formData;
+        const res = await database.users.update(editingUser.id, profileData);
         if (res.success) {
+          if (password && password.trim().length > 0) {
+            const { data, error } = await supabase.functions.invoke('update-user-password', {
+              body: { uid: editingUser.id, password }
+            });
+            if (error) {
+              alert("Profile updated, but password update failed: " + error.message);
+            } else if (data && data.error) {
+              alert("Profile updated, but password update failed: " + data.error);
+            }
+          }
           setIsFormOpen(false);
           loadUsers();
         } else {
           alert("Update failed: " + res.error);
         }
       } else {
-        const res = await database.users.create(formData);
-        if (res.success) {
+        const { data, error } = await supabase.functions.invoke('create-user', {
+          body: formData
+        });
+
+        if (error) {
+          alert("Creation failed: " + error.message);
+        } else if (data && data.error) {
+          alert("Creation failed: " + data.error);
+        } else {
+          setCreatedCredentials({
+            email: formData.email,
+            password: formData.password
+          });
           setIsFormOpen(false);
           loadUsers();
-        } else {
-          alert("Creation failed: " + res.error);
         }
       }
     } catch (err) {
@@ -122,7 +161,7 @@ export default function UsersModule({ userRole }) {
     return matchesSearch && matchesRole;
   });
 
-  const isEditable = userRole === 'admin';
+  const isEditable = userRole === 'admin' || userRole === 'data_entry';
 
   const roleBadgeStyle = (role) => {
     const map = {
@@ -144,7 +183,7 @@ export default function UsersModule({ userRole }) {
       <div style={styles.filterBar} className="glass-panel">
         <div style={styles.searchBox}>
           <Search size={16} color="#64748b" />
-          <input
+          <input autoComplete="off"
             type="text"
             placeholder="Search by name or phone..."
             value={search}
@@ -204,8 +243,15 @@ export default function UsersModule({ userRole }) {
               badgeLabel={user.role}
               badgeType={user.role}
               infoRows={[
-                { icon: Phone, label: 'Phone', value: user.phone || '-' }
-              ]}
+                { icon: Phone, label: 'Phone', value: user.phone || '-' },
+                user.email && { icon: Mail, label: 'Email', value: user.email },
+                user.cnic && { icon: Fingerprint, label: 'CNIC', value: user.cnic },
+                user.age && { icon: Calendar, label: 'Age', value: `${user.age} years` },
+                user.education && { icon: GraduationCap, label: 'Education', value: user.education },
+                user.father_name && { icon: User, label: "Father's Name", value: user.father_name },
+                user.mother_name && { icon: User, label: "Mother's Name", value: user.mother_name },
+                user.address && { icon: MapPin, label: 'Address', value: user.address }
+              ].filter(Boolean)}
               actions={
                 isEditable
                   ? [
@@ -242,11 +288,13 @@ export default function UsersModule({ userRole }) {
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} style={styles.modalForm}>
+            <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
+              <h4 style={{ margin: '0 0 1rem 0', color: 'var(--color-primary)' }}>Personal Information</h4>
+              
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Full Name *</label>
-                  <input
+                  <input autoComplete="off"
                     type="text"
                     required
                     placeholder="Full Name"
@@ -276,7 +324,7 @@ export default function UsersModule({ userRole }) {
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Phone</label>
-                  <input
+                  <input autoComplete="off"
                     type="text"
                     placeholder="e.g. 03001234567"
                     value={formData.phone}
@@ -286,8 +334,82 @@ export default function UsersModule({ userRole }) {
                   />
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">CNIC Number</label>
+                  <input autoComplete="off"
+                    type="text"
+                    placeholder="e.g. 35201-1234567-1"
+                    value={formData.cnic}
+                    onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Age</label>
+                  <input autoComplete="off"
+                    type="number"
+                    placeholder="Age"
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Education Qualification</label>
+                  <input autoComplete="off"
+                    type="text"
+                    placeholder="e.g. Matric, Intermediate, BS"
+                    value={formData.education}
+                    onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Father's Name</label>
+                  <input autoComplete="off"
+                    type="text"
+                    placeholder="Father's Name"
+                    value={formData.father_name}
+                    onChange={(e) => setFormData({ ...formData, father_name: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Mother's Name</label>
+                  <input autoComplete="off"
+                    type="text"
+                    placeholder="Mother's Name"
+                    value={formData.mother_name}
+                    onChange={(e) => setFormData({ ...formData, mother_name: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Residential Address</label>
+                  <input autoComplete="off"
+                    type="text"
+                    placeholder="Street address, City"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <h4 style={{ margin: '1.5rem 0 1rem 0', color: 'var(--color-primary)', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>Login Credentials</h4>
+              
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Email Address</label>
-                  <input
+                  <input autoComplete="off"
                     type="email"
                     placeholder="email@example.com"
                     value={formData.email}
@@ -299,70 +421,36 @@ export default function UsersModule({ userRole }) {
 
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">CNIC Number</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 35201-1234567-1"
-                    value={formData.cnic}
-                    onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Age</label>
-                  <input
-                    type="number"
-                    placeholder="Age"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Education Qualification</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Matric, Intermediate, BS"
-                    value={formData.education}
-                    onChange={(e) => setFormData({ ...formData, education: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Father's Name</label>
-                  <input
-                    type="text"
-                    placeholder="Father's Name"
-                    value={formData.father_name}
-                    onChange={(e) => setFormData({ ...formData, father_name: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Mother's Name</label>
-                  <input
-                    type="text"
-                    placeholder="Mother's Name"
-                    value={formData.mother_name}
-                    onChange={(e) => setFormData({ ...formData, mother_name: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Residential Address</label>
-                  <input
-                    type="text"
-                    placeholder="Street address, City"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="form-input"
-                  />
+                  <label className="form-label">{editingUser ? 'New Password' : 'Password *'}</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <input autoComplete="off"
+                      type={showPassword ? "text" : "password"}
+                      required={!editingUser}
+                      minLength={6}
+                      placeholder={editingUser ? "Leave blank to keep current" : "Enter password"}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="form-input"
+                      style={{ minWidth: '150px', flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={toggleShowPassword}
+                      className="btn-secondary"
+                      style={{ padding: '0 0.5rem', height: '38px', flexShrink: 0 }}
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={generatePassword}
+                      className="btn-secondary"
+                      style={{ height: '38px', padding: '0 0.75rem', fontSize: '0.85rem', flexShrink: 0 }}
+                    >
+                      Generate
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -382,6 +470,57 @@ export default function UsersModule({ userRole }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {createdCredentials && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent} className="glass-panel">
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>User Created Successfully</h2>
+              <button 
+                onClick={() => setCreatedCredentials(null)} 
+                style={styles.closeBtn}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ padding: '1rem 0' }}>
+              <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem', lineHeight: 1.4 }}>
+                Please copy and share these credentials with the user immediately. The password is not stored in plaintext and cannot be recovered later.
+              </p>
+              
+              <div style={styles.credentialBox}>
+                <div style={styles.credentialRow}>
+                  <strong>Email:</strong> <code style={{ marginLeft: 8, fontSize: '0.9rem', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: 4 }}>{createdCredentials.email}</code>
+                </div>
+                <div style={styles.credentialRow} style={{ marginTop: '0.75rem' }}>
+                  <strong>Password:</strong> <code style={{ marginLeft: 8, fontSize: '0.9rem', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: 4 }}>{createdCredentials.password}</code>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.modalActions}>
+              <button 
+                type="button" 
+                onClick={() => {
+                  navigator.clipboard.writeText(`Email: ${createdCredentials.email}\nPassword: ${createdCredentials.password}`);
+                  alert("Credentials copied to clipboard!");
+                }} 
+                className="btn-accent"
+              >
+                Copy Credentials
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setCreatedCredentials(null)} 
+                className="btn-secondary"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -625,5 +764,19 @@ const styles = {
     border: '1px dashed var(--color-border)',
     borderRadius: 'var(--radius-md)',
     backgroundColor: '#fff'
+  },
+  credentialBox: {
+    backgroundColor: '#f8fafc',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '1.25rem',
+    marginBottom: '1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem'
+  },
+  credentialRow: {
+    fontSize: '0.9rem',
+    color: 'var(--color-text-main)',
   }
 };

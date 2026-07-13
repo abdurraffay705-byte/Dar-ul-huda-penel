@@ -205,7 +205,7 @@ export default function StudentsModule({ userRole, user }) {
       {/* FILTER ACTION BAR */}
       <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredStudents.length === 0 ? 'configBarExpanded' : ''}`}>
         <div style={styles.searchBox} className="filter-bar__search">
-          <input
+          <input autoComplete="off"
             type="text"
             placeholder="Search by student name, roll number, father..."
             value={search}
@@ -409,11 +409,11 @@ export default function StudentsModule({ userRole, user }) {
               </button>
             </div>
             
-            <form onSubmit={handleFormSubmit} style={styles.modalForm}>
+            <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Full Name *</label>
-                  <input
+                  <input autoComplete="off"
                     type="text"
                     required
                     placeholder="Student Full Name"
@@ -424,7 +424,7 @@ export default function StudentsModule({ userRole, user }) {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Roll Number *</label>
-                  <input
+                  <input autoComplete="off"
                     type="text"
                     required
                     placeholder="DUH-2026-001"
@@ -438,7 +438,7 @@ export default function StudentsModule({ userRole, user }) {
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Phone Contact Number</label>
-                  <input
+                  <input autoComplete="off"
                     type="text"
                     placeholder="e.g. 03001234567"
                     value={formData.phone}
@@ -470,7 +470,7 @@ export default function StudentsModule({ userRole, user }) {
 
               <div className="form-group">
                 <label className="form-label">Father's Name *</label>
-                <input
+                <input autoComplete="off"
                   type="text"
                   required
                   placeholder="Father's Full Name"

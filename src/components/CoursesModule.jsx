@@ -109,7 +109,7 @@ export default function CoursesModule({ userRole }) {
       <div style={styles.filterBar} className="glass-panel">
         <div style={styles.searchBox}>
           <BookOpen size={16} color="#64748b" />
-          <input
+          <input autoComplete="off"
             type="text"
             placeholder="Search by course title or details..."
             value={search}
@@ -178,10 +178,10 @@ export default function CoursesModule({ userRole }) {
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} style={styles.modalForm}>
+            <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
               <div className="form-group">
                 <label className="form-label">Course Title *</label>
-                <input
+                <input autoComplete="off"
                   type="text"
                   required
                   placeholder="e.g. Classical Arabic Grammar"

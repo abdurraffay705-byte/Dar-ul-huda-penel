@@ -171,7 +171,7 @@ export default function TeachersModule({ userRole }) {
       <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredTeachers.length === 0 ? 'configBarExpanded' : ''}`}>
         <div style={styles.searchBox} className="filter-bar__search">
           <Search size={16} color="#64748b" />
-          <input
+          <input autoComplete="off"
             type="text"
             placeholder="Search by instructor name, subject, qualification..."
             value={search}
@@ -283,11 +283,11 @@ export default function TeachersModule({ userRole }) {
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} style={styles.modalForm}>
+            <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Full Name *</label>
-                  <input
+                  <input autoComplete="off"
                     type="text"
                     required
                     placeholder="Instructor Full Name"
@@ -319,7 +319,7 @@ export default function TeachersModule({ userRole }) {
                 <div className="form-row">
                   <div className="form-group" style={{ flex: 1 }}>
                     <label className="form-label">Email Address *</label>
-                    <input
+                    <input autoComplete="off"
                       type="email"
                       required
                       placeholder="teacher@example.com"
@@ -331,7 +331,7 @@ export default function TeachersModule({ userRole }) {
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
                     <label className="form-label">Password *</label>
-                    <input
+                    <input autoComplete="off"
                       type="password"
                       required
                       placeholder="Create a password"
@@ -347,7 +347,7 @@ export default function TeachersModule({ userRole }) {
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Phone Contact *</label>
-                  <input
+                  <input autoComplete="off"
                     type="text"
                     required
                     placeholder="e.g. 03001234567"
@@ -359,7 +359,7 @@ export default function TeachersModule({ userRole }) {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Joining Date *</label>
-                  <input
+                  <input autoComplete="off"
                     type="date"
                     required
                     value={formData.joining_date}
@@ -372,7 +372,7 @@ export default function TeachersModule({ userRole }) {
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Qualification Credentials</label>
-                  <input
+                  <input autoComplete="off"
                     type="text"
                     placeholder="e.g., Hafiz-e-Quran, MA Arabic"
                     value={formData.qualification}
@@ -382,7 +382,7 @@ export default function TeachersModule({ userRole }) {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Monthly Salary (PKR) *</label>
-                  <input
+                  <input autoComplete="off"
                     type="number"
                     required
                     placeholder="Salary scale"

@@ -205,7 +205,7 @@ export default function DonationsModule({ userRole }) {
       <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
         <div style={styles.searchBox} className="filter-bar__search">
           <Search size={16} color="#64748b" />
-          <input
+          <input autoComplete="off"
             type="text"
             placeholder="Search by donor name..."
             value={search}
@@ -299,10 +299,10 @@ export default function DonationsModule({ userRole }) {
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} style={styles.modalForm}>
+            <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
               <div className="form-group">
                 <label className="form-label">Donor Name *</label>
-                <input
+                <input autoComplete="off"
                   type="text"
                   required
                   placeholder="Donor Full Name / Anonymous"
@@ -330,7 +330,7 @@ export default function DonationsModule({ userRole }) {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Amount (PKR) *</label>
-                  <input
+                  <input autoComplete="off"
                     type="number"
                     required
                     placeholder="Capital in PKR"
