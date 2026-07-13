@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3, ChevronDown, Calendar, GraduationCap } from 'lucide-react';
+import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3, ChevronDown, Calendar, GraduationCap, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 import logoImg from '../assets/logo.jpg';
@@ -12,6 +12,7 @@ export default function FeesModule({ userRole }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Modals
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
@@ -128,47 +129,61 @@ export default function FeesModule({ userRole }) {
 
   const handleInvoiceSubmit = async (e) => {
     e.preventDefault();
-    if (editingFee) {
-      const res = await database.fees.update(editingFee.id, {
-        student_id: invoiceForm.student_id,
-        amount: Number(invoiceForm.amount),
-        due_date: invoiceForm.due_date,
-        status: invoiceForm.status
-      });
-      if (res.success) {
-        setIsInvoiceOpen(false);
-        setEditingFee(null);
-        loadFeeData();
+    try {
+      setIsSubmitting(true);
+      if (editingFee) {
+        const res = await database.fees.update(editingFee.id, {
+          student_id: invoiceForm.student_id,
+          amount: Number(invoiceForm.amount),
+          due_date: invoiceForm.due_date,
+          status: invoiceForm.status
+        });
+        if (res.success) {
+          setIsInvoiceOpen(false);
+          setEditingFee(null);
+          loadFeeData();
+        } else {
+          alert("Failed to update billing invoice: " + res.error);
+        }
       } else {
-        alert("Failed to update billing invoice: " + res.error);
+        const res = await database.fees.create({
+          student_id: invoiceForm.student_id,
+          amount: Number(invoiceForm.amount),
+          due_date: invoiceForm.due_date,
+          status: invoiceForm.status || 'unpaid'
+        });
+        if (res.success) {
+          setIsInvoiceOpen(false);
+          loadFeeData();
+        } else {
+          alert("Failed to create billing invoice: " + res.error);
+        }
       }
-    } else {
-      const res = await database.fees.create({
-        student_id: invoiceForm.student_id,
-        amount: Number(invoiceForm.amount),
-        due_date: invoiceForm.due_date,
-        status: invoiceForm.status || 'unpaid'
-      });
-      if (res.success) {
-        setIsInvoiceOpen(false);
-        loadFeeData();
-      } else {
-        alert("Failed to create billing invoice: " + res.error);
-      }
+    } catch (err) {
+      alert("Error submitting billing invoice: " + (err.message || err));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
-    const res = await database.fees.recordPayment({
-      ...paymentForm,
-      amount_paid: Number(paymentForm.amount_paid)
-    });
-    if (res.success) {
-      setIsPaymentOpen(false);
-      loadFeeData();
-    } else {
-      alert("Failed to post payment: " + res.error);
+    try {
+      setIsSubmitting(true);
+      const res = await database.fees.recordPayment({
+        ...paymentForm,
+        amount_paid: Number(paymentForm.amount_paid)
+      });
+      if (res.success) {
+        setIsPaymentOpen(false);
+        loadFeeData();
+      } else {
+        alert("Failed to post payment: " + res.error);
+      }
+    } catch (err) {
+      alert("Error recording payment: " + (err.message || err));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -453,11 +468,18 @@ const handlePrint = () => {
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => { setIsInvoiceOpen(false); setEditingFee(null); }} className="btn-secondary">
+                <button type="button" onClick={() => { setIsInvoiceOpen(false); setEditingFee(null); }} className="btn-secondary" disabled={isSubmitting}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-accent">
-                  {editingFee ? 'Save Invoice' : 'Publish Invoice'}
+                <button type="submit" className="btn-accent" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="spinner" />
+                      Processing...
+                    </>
+                  ) : (
+                    editingFee ? 'Save Invoice' : 'Publish Invoice'
+                  )}
                 </button>
               </div>
             </form>
@@ -533,11 +555,18 @@ const handlePrint = () => {
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setIsPaymentOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => setIsPaymentOpen(false)} className="btn-secondary" disabled={isSubmitting}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-accent">
-                  Confirm Payment
+                <button type="submit" className="btn-accent" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="spinner" />
+                      Posting...
+                    </>
+                  ) : (
+                    'Confirm Payment'
+                  )}
                 </button>
               </div>
             </form>

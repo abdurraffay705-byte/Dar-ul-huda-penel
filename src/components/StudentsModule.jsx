@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, MapPin, Calendar, CheckSquare, ChevronDown, GraduationCap, User } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, MapPin, Calendar, CheckSquare, ChevronDown, GraduationCap, User, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 import Badge from './Badge';
@@ -36,6 +36,7 @@ export default function StudentsModule({ userRole, user }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Modals & Active student state
   const [activeStudent, setActiveStudent] = useState(null);
@@ -131,30 +132,37 @@ export default function StudentsModule({ userRole, user }) {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (editingStudent) {
-      // Update
-      const res = await database.students.update(editingStudent.id, {
-        ...formData,
-        user_id: editingStudent.user_id
-      });
-      if (res.success) {
-        setIsFormOpen(false);
-        loadStudents();
-        if (activeStudent?.id === editingStudent.id) {
-          setActiveStudent({ ...activeStudent, ...formData, class: formData.class_name });
+    try {
+      setIsSubmitting(true);
+      if (editingStudent) {
+        // Update
+        const res = await database.students.update(editingStudent.id, {
+          ...formData,
+          user_id: editingStudent.user_id
+        });
+        if (res.success) {
+          setIsFormOpen(false);
+          loadStudents();
+          if (activeStudent?.id === editingStudent.id) {
+            setActiveStudent({ ...activeStudent, ...formData, class: formData.class_name });
+          }
+        } else {
+          alert("Update failed: " + res.error);
         }
       } else {
-        alert("Update failed: " + res.error);
+        // Create
+        const res = await database.students.create(formData);
+        if (res.success) {
+          setIsFormOpen(false);
+          loadStudents();
+        } else {
+          alert("Creation failed: " + res.error);
+        }
       }
-    } else {
-      // Create
-      const res = await database.students.create(formData);
-      if (res.success) {
-        setIsFormOpen(false);
-        loadStudents();
-      } else {
-        alert("Creation failed: " + res.error);
-      }
+    } catch (err) {
+      alert("Error submitting student form: " + (err.message || err));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -485,11 +493,18 @@ export default function StudentsModule({ userRole, user }) {
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setIsFormOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="btn-secondary" disabled={isSubmitting}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-accent">
-                  {editingStudent ? 'Save Profile' : 'Admit Student'}
+                <button type="submit" className="btn-accent" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="spinner" />
+                      Saving...
+                    </>
+                  ) : (
+                    editingStudent ? 'Save Profile' : 'Admit Student'
+                  )}
                 </button>
               </div>
             </form>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Phone, Users as UsersIcon, ChevronDown } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Phone, Users as UsersIcon, ChevronDown, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 
@@ -15,6 +15,7 @@ export default function UsersModule({ userRole }) {
   // Modal & Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const blankForm = {
     full_name: '',
@@ -87,23 +88,29 @@ export default function UsersModule({ userRole }) {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-
-    if (editingUser) {
-      const res = await database.users.update(editingUser.id, formData);
-      if (res.success) {
-        setIsFormOpen(false);
-        loadUsers();
+    try {
+      setIsSubmitting(true);
+      if (editingUser) {
+        const res = await database.users.update(editingUser.id, formData);
+        if (res.success) {
+          setIsFormOpen(false);
+          loadUsers();
+        } else {
+          alert("Update failed: " + res.error);
+        }
       } else {
-        alert("Update failed: " + res.error);
+        const res = await database.users.create(formData);
+        if (res.success) {
+          setIsFormOpen(false);
+          loadUsers();
+        } else {
+          alert("Creation failed: " + res.error);
+        }
       }
-    } else {
-      const res = await database.users.create(formData);
-      if (res.success) {
-        setIsFormOpen(false);
-        loadUsers();
-      } else {
-        alert("Creation failed: " + res.error);
-      }
+    } catch (err) {
+      alert("Error submitting user form: " + (err.message || err));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -360,11 +367,18 @@ export default function UsersModule({ userRole }) {
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setIsFormOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="btn-secondary" disabled={isSubmitting}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-accent">
-                  {editingUser ? 'Update Profile' : 'Create User'}
+                <button type="submit" className="btn-accent" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="spinner" />
+                      Saving...
+                    </>
+                  ) : (
+                    editingUser ? 'Update Profile' : 'Create User'
+                  )}
                 </button>
               </div>
             </form>

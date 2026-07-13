@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { FileText, PlusCircle, Trash2, Calendar, AlertTriangle, BellRing, Edit3, ChevronDown } from 'lucide-react';
+import { FileText, PlusCircle, Trash2, Calendar, AlertTriangle, BellRing, Edit3, ChevronDown, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 
@@ -176,7 +176,17 @@ export default function CMSModule({ userRole }) {
                 className="btn-accent" 
                 style={{ width: '100%', justifyContent: 'center' }}
               >
-                <BellRing size={16} /> {submitting ? 'Broadcasting notice...' : (editingNotice ? 'Save Changes' : 'Publish Announcement')}
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className="spinner" />
+                    Broadcasting notice...
+                  </>
+                ) : (
+                  <>
+                    <BellRing size={16} />
+                    {editingNotice ? 'Save Changes' : 'Publish Announcement'}
+                  </>
+                )}
               </button>
             </form>
           </div>

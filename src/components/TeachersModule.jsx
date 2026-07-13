@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign, ChevronDown } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign, ChevronDown, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 
@@ -14,6 +14,7 @@ export default function TeachersModule({ userRole }) {
   // Modal & Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -94,21 +95,22 @@ export default function TeachersModule({ userRole }) {
       salary: Number(formData.salary)
     };
 
-    if (editingTeacher) {
-      const res = await database.teachers.update(editingTeacher.id, {
-        ...cleanData,
-        user_id: editingTeacher.user_id
-      });
-      if (res.success) {
-        setIsFormOpen(false);
-        loadTeachers();
-      } else {
-        alert("Update failed: " + res.error);
-      }
-      return;
-    }
-
     try {
+      setIsSubmitting(true);
+      if (editingTeacher) {
+        const res = await database.teachers.update(editingTeacher.id, {
+          ...cleanData,
+          user_id: editingTeacher.user_id
+        });
+        if (res.success) {
+          setIsFormOpen(false);
+          loadTeachers();
+        } else {
+          alert("Update failed: " + res.error);
+        }
+        return;
+      }
+
       const { email, password, ...teacherPayload } = cleanData;
 
       if (!email || !password) {
@@ -142,6 +144,8 @@ export default function TeachersModule({ userRole }) {
       }
     } catch (err) {
       alert("Creation failed: " + (err?.message || err));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -390,11 +394,18 @@ export default function TeachersModule({ userRole }) {
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setIsFormOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="btn-secondary" disabled={isSubmitting}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-accent">
-                  {editingTeacher ? 'Update Profile' : 'Confirm Appointment'}
+                <button type="submit" className="btn-accent" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="spinner" />
+                      Saving...
+                    </>
+                  ) : (
+                    editingTeacher ? 'Update Profile' : 'Confirm Appointment'
+                  )}
                 </button>
               </div>
             </form>

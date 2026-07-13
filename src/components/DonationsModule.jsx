@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X, Trash2, Edit3, ChevronDown } from 'lucide-react';
+import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X, Trash2, Edit3, ChevronDown, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 
@@ -14,6 +14,7 @@ export default function DonationsModule({ userRole }) {
   // Modals & Forms
   const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [editingDonation, setEditingDonation] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     donor_name: '',
     amount: '',
@@ -70,23 +71,30 @@ export default function DonationsModule({ userRole }) {
       payment_mode: formData.payment_mode.toLowerCase()
     };
 
-    if (editingDonation) {
-      const res = await database.donations.update(editingDonation.id, cleanDonation);
-      if (res.success) {
-        setIsRecordOpen(false);
-        setEditingDonation(null);
-        loadDonations();
+    try {
+      setIsSubmitting(true);
+      if (editingDonation) {
+        const res = await database.donations.update(editingDonation.id, cleanDonation);
+        if (res.success) {
+          setIsRecordOpen(false);
+          setEditingDonation(null);
+          loadDonations();
+        } else {
+          alert("Failed to update donation: " + res.error);
+        }
       } else {
-        alert("Failed to update donation: " + res.error);
+        const res = await database.donations.create(cleanDonation);
+        if (res.success) {
+          setIsRecordOpen(false);
+          loadDonations();
+        } else {
+          alert("Failed to log charity donation: " + res.error);
+        }
       }
-    } else {
-      const res = await database.donations.create(cleanDonation);
-      if (res.success) {
-        setIsRecordOpen(false);
-        loadDonations();
-      } else {
-        alert("Failed to log charity donation: " + res.error);
-      }
+    } catch (err) {
+      alert("Error submitting donation: " + (err.message || err));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -350,11 +358,18 @@ export default function DonationsModule({ userRole }) {
               </div>
 
               <div style={styles.modalActions}>
-                <button type="button" onClick={() => setIsRecordOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => setIsRecordOpen(false)} className="btn-secondary" disabled={isSubmitting}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-accent">
-                  {editingDonation ? 'Save Changes' : 'Post Donation'}
+                <button type="submit" className="btn-accent" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="spinner" />
+                      Saving...
+                    </>
+                  ) : (
+                    editingDonation ? 'Save Changes' : 'Post Donation'
+                  )}
                 </button>
               </div>
             </form>

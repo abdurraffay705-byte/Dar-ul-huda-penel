@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, Loader2 } from 'lucide-react';
 import logoImg from '../assets/logo.jpg';
 import { auth } from '../supabaseClient';
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,10 +16,14 @@ export default function Login({ onLogin }) {
     }
 
     try {
+      setIsLoading(true);
+      setError('');
       const user = await auth.signIn(email, password);
       onLogin(user);
     } catch (err) {
       setError(err.message || 'Login failed.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -40,7 +45,7 @@ export default function Login({ onLogin }) {
 
         {error && <div style={styles.errorAlert}>{error}</div>}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
+        <form onSubmit={handleSubmit} style={styles.form} autoComplete="off">
           <div className="form-group">
             <label className="form-label" style={styles.label}>
               <Mail size={16} style={{ marginRight: 6 }} /> Email Address
@@ -53,6 +58,7 @@ export default function Login({ onLogin }) {
               className="form-input"
               style={styles.input}
               required
+              autoComplete="off"
             />
           </div>
 
@@ -68,11 +74,24 @@ export default function Login({ onLogin }) {
               className="form-input"
               style={styles.input}
               required
+              autoComplete="new-password"
             />
           </div>
 
-          <button type="submit" className="btn-accent" style={styles.submitBtn}>
-            Sign In to Dashboard
+          <button 
+            type="submit" 
+            className="btn-accent" 
+            style={styles.submitBtn}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 size={16} className="spinner" />
+                Logging in...
+              </>
+            ) : (
+              'Sign In to Dashboard'
+            )}
           </button>
         </form>
 
