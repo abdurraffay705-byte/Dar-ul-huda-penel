@@ -475,34 +475,42 @@ export default function UsersModule({ userRole }) {
       )}
 
       {createdCredentials && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent} className="glass-panel">
+        <div className="standalone-form-container fade-in">
+          <div className="glass-panel fade-in modal-card">
             <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>User Created Successfully</h2>
+              <h3 style={styles.modalTitle}>User Created Successfully</h3>
               <button 
                 onClick={() => setCreatedCredentials(null)} 
                 style={styles.closeBtn}
+                className="btn-icon-only"
               >
                 <X size={18} />
               </button>
             </div>
             
-            <div style={{ padding: '1rem 0' }}>
-              <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem', lineHeight: 1.4 }}>
+            <div style={{ padding: '0.5rem 0 1rem 0' }}>
+              <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
                 Please copy and share these credentials with the user immediately. The password is not stored in plaintext and cannot be recovered later.
               </p>
               
               <div style={styles.credentialBox}>
                 <div style={styles.credentialRow}>
-                  <strong>Email:</strong> <code style={{ marginLeft: 8, fontSize: '0.9rem', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: 4 }}>{createdCredentials.email}</code>
+                  <strong>Email:</strong> <code style={{ marginLeft: 8, fontSize: '0.95rem', backgroundColor: '#fff', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: 4, color: 'var(--color-text-main)' }}>{createdCredentials.email}</code>
                 </div>
                 <div style={styles.credentialRow} style={{ marginTop: '0.75rem' }}>
-                  <strong>Password:</strong> <code style={{ marginLeft: 8, fontSize: '0.9rem', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: 4 }}>{createdCredentials.password}</code>
+                  <strong>Password:</strong> <code style={{ marginLeft: 8, fontSize: '0.95rem', backgroundColor: '#fff', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: 4, color: 'var(--color-text-main)' }}>{createdCredentials.password}</code>
                 </div>
               </div>
             </div>
 
             <div style={styles.modalActions}>
+              <button 
+                type="button" 
+                onClick={() => setCreatedCredentials(null)} 
+                className="btn-secondary"
+              >
+                Close
+              </button>
               <button 
                 type="button" 
                 onClick={() => {
@@ -512,13 +520,6 @@ export default function UsersModule({ userRole }) {
                 className="btn-accent"
               >
                 Copy Credentials
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setCreatedCredentials(null)} 
-                className="btn-secondary"
-              >
-                Close
               </button>
             </div>
           </div>
@@ -766,9 +767,9 @@ const styles = {
     backgroundColor: '#fff'
   },
   credentialBox: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'rgba(248, 250, 252, 0.8)',
     border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-sm)',
+    borderRadius: 'var(--radius-md)',
     padding: '1.25rem',
     marginBottom: '1rem',
     display: 'flex',
@@ -776,7 +777,9 @@ const styles = {
     gap: '0.5rem'
   },
   credentialRow: {
-    fontSize: '0.9rem',
+    fontSize: '0.95rem',
     color: 'var(--color-text-main)',
+    display: 'flex',
+    alignItems: 'center'
   }
 };
