@@ -49,39 +49,15 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Try to update Auth email first
-    let { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(uid, { email: newEmail, email_confirm: true });
-
-    // Self-heal: if this profile has no matching Auth account yet, create one now
-    if (authUpdateError && /not.*found|does not exist/i.test(authUpdateError.message || '')) {
-      const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-        id: uid,
-        email: newEmail,
-        password: "TemporaryPassword123!", // Safe default password; they can change it later
-        email_confirm: true
-      });
-
-      if (createError) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to create missing Auth account: ' + createError.message }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      authUpdateError = null; // resolved
-    }
-
+    const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(uid, { email: newEmail, email_confirm: true });
     if (authUpdateError) {
-      return new Response(
-        JSON.stringify({ error: 'Auth email update failed: ' + authUpdateError.message }),
+      return new Response(JSON.stringify({ error: 'Auth email update failed: ' + authUpdateError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Update public.users email to match
     const { error: profileUpdateError } = await supabaseAdmin.from('users').update({ email: newEmail }).eq('id', uid);
     if (profileUpdateError) {
-      return new Response(
-        JSON.stringify({ error: 'Auth updated, but profile update failed: ' + profileUpdateError.message }),
+      return new Response(JSON.stringify({ error: 'Auth updated, but profile update failed: ' + profileUpdateError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
