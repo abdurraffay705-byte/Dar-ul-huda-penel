@@ -14,13 +14,14 @@ import EmptyState from './EmptyState';
 import Badge from './Badge';
 
 
-export default function DashboardHome({ setActiveTab }) {
+export default function DashboardHome({ setActiveTab, userRole, user }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     studentsCount: 0,
     teachersCount: 0,
     feesCollected: 0,
-    donationsTotal: 0
+    donationsTotal: 0,
+    sectionsCount: 0
   });
   const [notices, setNotices] = useState([]);
   const [recentFees, setRecentFees] = useState([]);
@@ -38,93 +39,123 @@ export default function DashboardHome({ setActiveTab }) {
     async function loadDashboardData() {
       try {
         setLoading(true);
-        const [studentsList, teachersList, feesList, donationsList, noticesList] = await Promise.all([
-          database.students.list(),
-          database.teachers.list(),
-          database.fees.list(),
-          database.donations.list(),
-          database.cms.list()
-        ]);
+        const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+        
+        if (norm === 'teacher' && user?.id) {
+          const { data: teacherProfile, error: profErr } = await supabase
+            .from('teachers')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (profErr) throw profErr;
 
-        const totalStudents = studentsList.length;
-        const totalTeachers = teachersList.length;
-        
-        // Sum paid fee amounts across invoice logs (fees has status 'paid' | 'unpaid')
-        // In authoritative schema, actual collections are represented by fee_payments records
-        // Let's load fee payments and sum their amounts!
-        let totalPaidFees = 0;
-        const feesPaymentsAccumulator = [];
-        
-        for (const fee of feesList) {
-          const payments = await database.fees.paymentsList(fee.id);
-          payments.forEach(p => {
-            totalPaidFees += Number(p.amount_paid);
-            feesPaymentsAccumulator.push({
-              id: p.id,
-              student_name: fee.student_name,
-              roll_number: fee.roll_number,
-              amount_paid: p.amount_paid,
-              payment_date: p.payment_date,
-              fee_month: 'Invoice Ref: ' + fee.due_date
-            });
+          let totalStudents = 0;
+          let totalSections = 0;
+
+          if (teacherProfile) {
+            const { data: secs, error: secErr } = await supabase
+              .from('sections')
+              .select('*, students(id)')
+              .eq('teacher_id', teacherProfile.id);
+            if (secErr) throw secErr;
+
+            totalSections = secs?.length || 0;
+            totalStudents = (secs || []).reduce((sum, s) => sum + (s.students?.length || 0), 0);
+          }
+
+          const noticesList = await database.cms.list();
+
+          setStats({
+            studentsCount: totalStudents,
+            teachersCount: 0,
+            feesCollected: 0,
+            donationsTotal: 0,
+            sectionsCount: totalSections
           });
-        }
+          setNotices(noticesList.slice(0, 3));
+        } else {
+          const [studentsList, teachersList, feesList, donationsList, noticesList] = await Promise.all([
+            database.students.list(),
+            database.teachers.list(),
+            database.fees.list(),
+            database.donations.list(),
+            database.cms.list()
+          ]);
+
+          const totalStudents = studentsList.length;
+          const totalTeachers = teachersList.length;
           
-        // Sum donations
-        const totalDonations = donationsList.reduce((sum, d) => sum + Number(d.amount), 0);
-
-        setStats({
-          studentsCount: totalStudents,
-          teachersCount: totalTeachers,
-          feesCollected: totalPaidFees,
-          donationsTotal: totalDonations
-        });
-
-        // Set top 3 active notices
-        setNotices(noticesList.slice(0, 3));
-        
-        // Set top 4 recent fee payments
-        feesPaymentsAccumulator.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
-        setRecentFees(feesPaymentsAccumulator.slice(0, 4));
-
-        // Fetch all fee payments from Supabase for the trend chart
-        const { data: paymentsData, error: paymentsError } = await supabase
-          .from('fee_payments')
-          .select('amount_paid, payment_date');
-
-        if (paymentsError) throw paymentsError;
-
-        const monthlySums = {
-          'Jan': 0,
-          'Feb': 0,
-          'Mar': 0,
-          'Apr': 0,
-          'May': 0,
-          'Jun': 0
-        };
-
-        if (paymentsData) {
-          paymentsData.forEach(p => {
-            if (!p.payment_date) return;
-            const parts = p.payment_date.split('-');
-            const year = parseInt(parts[0], 10);
-            const monthIndex = parseInt(parts[1], 10) - 1;
+          let totalPaidFees = 0;
+          const feesPaymentsAccumulator = [];
+          
+          for (const fee of feesList) {
+            const payments = await database.fees.paymentsList(fee.id);
+            payments.forEach(p => {
+              totalPaidFees += Number(p.amount_paid);
+              feesPaymentsAccumulator.push({
+                id: p.id,
+                student_name: fee.student_name,
+                roll_number: fee.roll_number,
+                amount_paid: p.amount_paid,
+                payment_date: p.payment_date,
+                fee_month: 'Invoice Ref: ' + fee.due_date
+              });
+            });
+          }
             
-            if (year === 2026) {
-              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-              const monthName = monthNames[monthIndex];
-              if (monthlySums[monthName] !== undefined) {
-                monthlySums[monthName] += Number(p.amount_paid);
-              }
-            }
-          });
-        }
+          const totalDonations = donationsList.reduce((sum, d) => sum + Number(d.amount), 0);
 
-        const constructedChartData = Object.keys(monthlySums).map(month => ({
-          month,
-          amount: monthlySums[month]
-        }));
-        setChartData(constructedChartData);
+          setStats({
+            studentsCount: totalStudents,
+            teachersCount: totalTeachers,
+            feesCollected: totalPaidFees,
+            donationsTotal: totalDonations,
+            sectionsCount: 0
+          });
+
+          setNotices(noticesList.slice(0, 3));
+          
+          feesPaymentsAccumulator.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
+          setRecentFees(feesPaymentsAccumulator.slice(0, 4));
+
+          const { data: paymentsData, error: paymentsError } = await supabase
+            .from('fee_payments')
+            .select('amount_paid, payment_date');
+
+          if (paymentsError) throw paymentsError;
+
+          const monthlySums = {
+            'Jan': 0,
+            'Feb': 0,
+            'Mar': 0,
+            'Apr': 0,
+            'May': 0,
+            'Jun': 0
+          };
+
+          if (paymentsData) {
+            paymentsData.forEach(p => {
+              if (!p.payment_date) return;
+              const parts = p.payment_date.split('-');
+              const year = parseInt(parts[0], 10);
+              const monthIndex = parseInt(parts[1], 10) - 1;
+              
+              if (year === 2026) {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthName = monthNames[monthIndex];
+                if (monthlySums[monthName] !== undefined) {
+                  monthlySums[monthName] += Number(p.amount_paid);
+                }
+              }
+            });
+          }
+
+          const constructedChartData = Object.keys(monthlySums).map(month => ({
+            month,
+            amount: monthlySums[month]
+          }));
+          setChartData(constructedChartData);
+        }
       } catch (e) {
         console.error("Error loading dashboard metrics:", e);
       } finally {
@@ -133,7 +164,7 @@ export default function DashboardHome({ setActiveTab }) {
     }
 
     loadDashboardData();
-  }, []);
+  }, [userRole, user]);
 
   if (loading) {
     return (
@@ -149,6 +180,78 @@ export default function DashboardHome({ setActiveTab }) {
   const maxAmount = Math.max(...chartData.map(d => d.amount));
   const chartHeight = 150;
   const chartWidth = 360;
+
+  const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+
+  if (norm === 'teacher') {
+    return (
+      <div className="fade-in">
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.greeting} className="brand-title">Welcome, Teacher</h1>
+            <p style={styles.greetingSub}>Dar-ul-Huda Instructor Portal</p>
+          </div>
+          <div style={styles.dateBadge}>
+            Today: {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+        </div>
+
+        {/* SIMPLIFIED METRIC GRID */}
+        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+          <div className="glass-panel stat-card" onClick={() => navigate('/my-section')} style={{ cursor: 'pointer' }}>
+            <div>
+              <span style={styles.statLabel}>Assigned Sections</span>
+              <h2 style={styles.statValue}>{stats.sectionsCount}</h2>
+              <span style={styles.statTrend}><TrendingUp size={12} /> View sections details</span>
+            </div>
+            <div className="stat-icon green">
+              <Users size={24} />
+            </div>
+          </div>
+
+          <div className="glass-panel stat-card" onClick={() => navigate('/my-section')} style={{ cursor: 'pointer' }}>
+            <div>
+              <span style={styles.statLabel}>My Students</span>
+              <h2 style={styles.statValue}>{stats.studentsCount}</h2>
+              <span style={styles.statTrend}><TrendingUp size={12} /> Enrolled students registry</span>
+            </div>
+            <div className="stat-icon blue">
+              <Users size={24} />
+            </div>
+          </div>
+        </div>
+
+        {/* NOTICES BANNER */}
+        <div className="glass-panel" style={styles.noticesCard}>
+          <div style={styles.cardHeader}>
+            <h3 style={styles.cardTitle}><Bell size={18} style={{ verticalAlign: 'middle', marginRight: 8, color: 'var(--color-accent)' }} /> Active Notices & Announcements</h3>
+          </div>
+
+          <div style={styles.noticesGrid}>
+            {notices.length === 0 ? (
+              <p style={styles.emptyText}>No active notices posted on the CMS.</p>
+            ) : (
+              notices.map((n) => (
+                <div key={n.id} style={{
+                  ...styles.noticeItem,
+                  borderLeftColor: n.urgency === 'High' ? 'var(--color-danger)' : (n.urgency === 'Medium' ? 'var(--color-warning)' : 'var(--color-info)')
+                }}>
+                  <div style={styles.noticeMeta}>
+                    <span className={`badge ${n.urgency === 'High' ? 'danger' : (n.urgency === 'Medium' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>
+                      {n.urgency} Priority
+                    </span>
+                    <span style={styles.noticeDate}>{n.published_date}</span>
+                  </div>
+                  <h4 style={styles.noticeTitle}>{n.title}</h4>
+                  <p style={styles.noticeContent}>{n.content}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fade-in">

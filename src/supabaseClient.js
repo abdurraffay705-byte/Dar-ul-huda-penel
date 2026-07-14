@@ -243,17 +243,19 @@ export const database = {
     list: async () => {
       const { data, error } = await supabase
         .from('students')
-        .select('*, users(*)');
+        .select('*, users(*), sections(*)');
       if (error) throw new Error(error.message);
       return data.map(s => ({
         ...s,
         full_name: s.users?.full_name || '',
-        phone: s.users?.phone || ''
+        phone: s.users?.phone || '',
+        section_name: s.sections?.name || '',
+        section_program: s.sections?.program || ''
       }));
     },
 
     create: async (studentPayload) => {
-      const { full_name, phone, class_name, roll_number, father_name, address } = studentPayload;
+      const { full_name, phone, class_name, roll_number, father_name, address, section_id } = studentPayload;
 
       // 1. Create user row
       const newUserId = uuidv4();
@@ -277,7 +279,8 @@ export const database = {
           class: class_name,
           roll_number,
           father_name,
-          address
+          address,
+          section_id: section_id || null
         })
         .select();
 
@@ -289,7 +292,7 @@ export const database = {
     },
 
     update: async (id, studentPayload) => {
-      const { full_name, phone, class_name, roll_number, father_name, address, user_id } = studentPayload;
+      const { full_name, phone, class_name, roll_number, father_name, address, user_id, section_id } = studentPayload;
 
       const { error: userErr } = await supabase
         .from('users')
@@ -299,7 +302,7 @@ export const database = {
 
       const { data, error: studErr } = await supabase
         .from('students')
-        .update({ class: class_name, roll_number, father_name, address })
+        .update({ class: class_name, roll_number, father_name, address, section_id: section_id || null })
         .eq('id', id)
         .select();
 
@@ -676,6 +679,54 @@ export const database = {
 
     delete: async (id) => {
       const { error } = await supabase.from('cms_notices').delete().eq('id', id);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    }
+  },
+
+  // ── SECTIONS ───────────────────────────────────────────────
+  sections: {
+    list: async () => {
+      const { data, error } = await supabase
+        .from('sections')
+        .select('*, teachers(*, users(*)), students(id)');
+      if (error) throw new Error(error.message);
+      return data;
+    },
+
+    create: async (sectionPayload) => {
+      const { name, program, teacher_id } = sectionPayload;
+      const { data, error } = await supabase
+        .from('sections')
+        .insert({
+          name,
+          program,
+          teacher_id: teacher_id || null
+        })
+        .select();
+
+      if (error) return { success: false, error: error.message };
+      return { success: true, data: data[0] };
+    },
+
+    update: async (id, sectionPayload) => {
+      const { name, program, teacher_id } = sectionPayload;
+      const { data, error } = await supabase
+        .from('sections')
+        .update({
+          name,
+          program,
+          teacher_id: teacher_id || null
+        })
+        .eq('id', id)
+        .select();
+
+      if (error) return { success: false, error: error.message };
+      return { success: true, data: data[0] };
+    },
+
+    delete: async (id) => {
+      const { error } = await supabase.from('sections').delete().eq('id', id);
       if (error) return { success: false, error: error.message };
       return { success: true };
     }

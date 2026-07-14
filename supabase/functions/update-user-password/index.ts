@@ -6,7 +6,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -20,14 +19,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 1. Initialise user Supabase client to verify authorization
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Get logged-in user profile to verify role
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
       return new Response(
@@ -36,7 +33,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check role in public.users
     const { data: profile, error: profileError } = await supabaseClient
       .from('users')
       .select('role')
@@ -50,14 +46,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Initialise admin Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
 
-    // Parse request body
     const body = await req.json();
     const { uid, password } = body;
 
@@ -68,10 +62,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update auth user password
-    const { data: authData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
-      password: password
-    });
+    // Try to update the password first
+    let { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, { password });
+
+    // Self-heal: if this profile has no matching Auth account yet, create one now
+    if (updateError && /not.*found|does not exist/i.test(updateError.message || '')) {
+      const { data: profileRow, error: profileFetchError } = await supabaseAdmin
+        .from('users')
+        .select('email')
+        .eq('id', uid)
+        .single();
+
+      if (profileFetchError || !profileRow?.email) {
+        return new Response(
+          JSON.stringify({ error: 'Cannot create Auth account: no email on file for this user. Add an email first.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+        id: uid,
+        email: profileRow.email,
+        password,
+        email_confirm: true
+      });
+
+      if (createError) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to create missing Auth account: ' + createError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      updateError = null; // resolved
+    }
 
     if (updateError) {
       return new Response(

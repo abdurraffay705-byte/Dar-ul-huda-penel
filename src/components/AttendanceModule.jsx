@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
-import { CheckSquare, Calendar, UserCheck, Search, Info, Trash2, ChevronDown, Users } from 'lucide-react';
+import { Calendar, UserCheck, Search, Info, Trash2, ChevronDown, Users } from 'lucide-react';
 import EmptyState from './EmptyState';
 
 export default function AttendanceModule({ userRole, user }) {
@@ -30,8 +30,42 @@ export default function AttendanceModule({ userRole, user }) {
   const loadRoster = async () => {
     try {
       setLoading(true);
+      const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+      let sectionIds = [];
+      let teacherId = null;
+
+      if (norm === 'teacher' && user?.id) {
+        const { data: teacherProfile } = await supabase
+          .from('teachers')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (teacherProfile) {
+          teacherId = teacherProfile.id;
+          const { data: teacherSections } = await supabase
+            .from('sections')
+            .select('id')
+            .eq('teacher_id', teacherId);
+          sectionIds = (teacherSections || []).map(s => s.id);
+        }
+      }
+
       if (activeTab === 'student') {
-        const studentRoster = await database.students.list();
+        let studentRoster = [];
+        if (norm === 'teacher') {
+          const { data: rawStudents, error: sErr } = await supabase
+            .from('students')
+            .select('*, users(*)')
+            .in('section_id', sectionIds);
+          if (sErr) throw sErr;
+          studentRoster = rawStudents.map(s => ({
+            ...s,
+            full_name: s.users?.full_name || '',
+            phone: s.users?.phone || ''
+          }));
+        } else {
+          studentRoster = await database.students.list();
+        }
         const activeStudents = studentRoster.filter(s => s.class === selectedClass);
         
         // Load logged attendance for this date (student)
@@ -50,7 +84,21 @@ export default function AttendanceModule({ userRole, user }) {
         });
         setAttendanceSheet(sheet);
       } else {
-        const teacherRoster = await database.teachers.list();
+        let teacherRoster = [];
+        if (norm === 'teacher') {
+          const { data: rawTeachers, error: tErr } = await supabase
+            .from('teachers')
+            .select('*, users(*)')
+            .eq('user_id', user.id);
+          if (tErr) throw tErr;
+          teacherRoster = rawTeachers.map(t => ({
+            ...t,
+            full_name: t.users?.full_name || '',
+            phone: t.users?.phone || ''
+          }));
+        } else {
+          teacherRoster = await database.teachers.list();
+        }
         
         // Load logged attendance
         const loggedAtt = await database.attendance.list(date, 'teacher');
@@ -162,17 +210,60 @@ export default function AttendanceModule({ userRole, user }) {
       (async () => {
         try {
           setReportLoading(true);
+          const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
+          
           let list = [];
           if (reportRole === 'student') {
-            const data = await database.students.list();
-            list = data.map(s => ({
+            let studentData = [];
+            if (norm === 'teacher' && user?.id) {
+              const { data: teacherProfile } = await supabase
+                .from('teachers')
+                .select('id')
+                .eq('user_id', user.id)
+                .maybeSingle();
+              let sectionIds = [];
+              if (teacherProfile) {
+                const { data: teacherSections } = await supabase
+                  .from('sections')
+                  .select('id')
+                  .eq('teacher_id', teacherProfile.id);
+                sectionIds = (teacherSections || []).map(s => s.id);
+              }
+              const { data: rawStudents, error: sErr } = await supabase
+                .from('students')
+                .select('*, users(*)')
+                .in('section_id', sectionIds);
+              if (sErr) throw sErr;
+              studentData = rawStudents.map(s => ({
+                ...s,
+                full_name: s.users?.full_name || '',
+                phone: s.users?.phone || ''
+              }));
+            } else {
+              studentData = await database.students.list();
+            }
+            list = studentData.map(s => ({
               id: s.user_id,
               name: s.full_name,
               details: `Roll: ${s.roll_number} | ${s.class}`
             }));
           } else {
-            const data = await database.teachers.list();
-            list = data.map(t => ({
+            let teacherData = [];
+            if (norm === 'teacher' && user?.id) {
+              const { data: rawTeachers, error: tErr } = await supabase
+                .from('teachers')
+                .select('*, users(*)')
+                .eq('user_id', user.id);
+              if (tErr) throw tErr;
+              teacherData = rawTeachers.map(t => ({
+                ...t,
+                full_name: t.users?.full_name || '',
+                phone: t.users?.phone || ''
+              }));
+            } else {
+              teacherData = await database.teachers.list();
+            }
+            list = teacherData.map(t => ({
               id: t.user_id,
               name: t.full_name,
               details: `Subject: ${t.subject}`
@@ -191,7 +282,7 @@ export default function AttendanceModule({ userRole, user }) {
         }
       })();
     }
-  }, [activeTab, reportRole]);
+  }, [activeTab, reportRole, userRole, user]);
 
   const handleRunReport = async () => {
     if (!selectedUserId) {
@@ -212,8 +303,10 @@ export default function AttendanceModule({ userRole, user }) {
   };
 
   useEffect(() => {
-    setHasQueried(false);
-    setReportLogs([]);
+    Promise.resolve().then(() => {
+      setHasQueried(false);
+      setReportLogs([]);
+    });
   }, [activeTab, reportRole, selectedUserId, startDate, endDate]);
 
   // Calculations
@@ -228,41 +321,13 @@ export default function AttendanceModule({ userRole, user }) {
     row.roll_no.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const [teacherSubject, setTeacherSubject] = useState('');
-
-  useEffect(() => {
-    async function fetchTeacherSubject() {
-      const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
-      if (norm === 'teacher' && user?.id) {
-        try {
-          const { data, error } = await supabase
-            .from('teachers')
-            .select('subject')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          if (data) {
-            setTeacherSubject(data.subject);
-          }
-        } catch (e) {
-          console.error("Error fetching teacher subject:", e);
-        }
-      }
-    }
-    fetchTeacherSubject();
-  }, [userRole, user]);
-
   const isStatusDisabled = (row) => {
     const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
     if (norm === 'admin') return false;
-    if (norm === 'data_entry') {
-      return false;
-    }
+    if (norm === 'data_entry') return false;
     if (norm === 'teacher') {
       if (activeTab === 'student') {
-        return !(selectedClass && teacherSubject && (
-          selectedClass.toLowerCase().includes(teacherSubject.toLowerCase()) ||
-          teacherSubject.toLowerCase().includes(selectedClass.toLowerCase())
-        ));
+        return false;
       } else {
         return row.id !== user?.id;
       }

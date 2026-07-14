@@ -13,6 +13,10 @@ import DonationsModule from './components/DonationsModule';
 import CMSModule from './components/CMSModule';
 import SettingsModule from './components/SettingsModule';
 import CoursesModule from './components/CoursesModule';
+import SectionsModule from './components/SectionsModule';
+import MySectionModule from './components/MySectionModule';
+import StudentAttendanceModule from './components/StudentAttendanceModule';
+import StudentFeesModule from './components/StudentFeesModule';
 
 import { Menu, X } from 'lucide-react';
 
@@ -22,22 +26,26 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const routeRoles = {
-    '/dashboard': ['admin', 'teacher', 'student'],
+    '/dashboard': ['admin', 'teacher'],
     '/users': ['admin'],
-    '/students': ['admin', 'teacher', 'student', 'data_entry'],
-    '/teachers': ['admin', 'teacher', 'data_entry'],
-    '/courses': ['admin', 'teacher', 'student'],
+    '/students': ['admin', 'data_entry'],
+    '/teachers': ['admin', 'data_entry'],
+    '/courses': ['admin'],
     '/attendance': ['admin', 'teacher', 'data_entry'],
-    '/fees': ['admin', 'student', 'data_entry'],
+    '/fees': ['admin', 'data_entry'],
     '/donations': ['admin', 'data_entry'],
-    '/cms': ['admin', 'teacher', 'student', 'data_entry'],
-    '/settings': ['admin']
+    '/cms': ['admin', 'data_entry'],
+    '/settings': ['admin'],
+    '/sections': ['admin', 'data_entry'],
+    '/my-section': ['teacher'],
+    '/student-attendance': ['student'],
+    '/student-fees': ['student']
   };
 
   function getDefaultTabForRole(role) {
     const normRole = role?.toLowerCase().replace(/[- ]/g, '_') || '';
-    if (normRole === 'teacher') return 'students';
-    if (normRole === 'student') return 'fees';
+    if (normRole === 'teacher') return 'dashboard';
+    if (normRole === 'student') return 'student-attendance';
     if (normRole === 'data_entry') return 'students';
     return 'dashboard';
   }
@@ -141,7 +149,7 @@ export default function App() {
 
         {/* Protected module routes — all top-level with absolute paths */}
         {[
-          { path: '/dashboard', element: <DashboardHome setActiveTab={setActiveTab} /> },
+          { path: '/dashboard', element: <DashboardHome setActiveTab={setActiveTab} userRole={user?.role} user={user} /> },
           { path: '/students', element: <StudentsModule userRole={user?.role} user={user} /> },
           { path: '/teachers', element: <TeachersModule userRole={user?.role} /> },
           { path: '/users', element: <UsersModule userRole={user?.role} /> },
@@ -150,6 +158,10 @@ export default function App() {
           { path: '/donations', element: <DonationsModule userRole={user?.role} /> },
           { path: '/cms', element: <CMSModule userRole={user?.role} /> },
           { path: '/courses', element: <CoursesModule userRole={user?.role} /> },
+          { path: '/sections', element: <SectionsModule userRole={user?.role} user={user} /> },
+          { path: '/my-section', element: <MySectionModule user={user} /> },
+          { path: '/student-attendance', element: <StudentAttendanceModule user={user} /> },
+          { path: '/student-fees', element: <StudentFeesModule user={user} /> },
           { path: '/settings', element: <SettingsModule /> },
         ].map(({ path, element }) => (
           <Route

@@ -394,7 +394,7 @@ export default function UsersModule({ userRole }) {
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Residential Address</label>
-                  <input autoComplete="off"
+                  <input autoComplete="new-password"
                     type="text"
                     placeholder="Street address, City"
                     value={formData.address}
@@ -423,7 +423,7 @@ export default function UsersModule({ userRole }) {
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">{editingUser ? 'New Password' : 'Password *'}</label>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <input autoComplete="off"
+                    <input autoComplete="new-password"
                       type={showPassword ? "text" : "password"}
                       required={!editingUser}
                       minLength={6}

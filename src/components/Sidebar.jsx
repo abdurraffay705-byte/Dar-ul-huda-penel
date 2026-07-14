@@ -10,7 +10,8 @@ import {
   FileText,
   Settings,
   LogOut,
-  BookOpen
+  BookOpen,
+  Layers
 } from 'lucide-react';
 import logoImg from '../assets/logo.jpg';
 
@@ -26,15 +27,19 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
 
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher', 'student'] },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher'] },
     { id: 'users', label: 'Users Management', icon: Users, roles: ['admin'] },
-    { id: 'students', label: 'Students Roster', icon: GraduationCap, roles: ['admin', 'teacher', 'student', 'data_entry'] },
-    { id: 'teachers', label: 'Teachers Registry', icon: UserSquare2, roles: ['admin', 'teacher', 'data_entry'] },
-    { id: 'courses', label: 'Courses Registry', icon: BookOpen, roles: ['admin', 'teacher', 'student'] },
+    { id: 'students', label: 'Students Roster', icon: GraduationCap, roles: ['admin', 'data_entry'] },
+    { id: 'teachers', label: 'Teachers Registry', icon: UserSquare2, roles: ['admin', 'data_entry'] },
+    { id: 'courses', label: 'Courses Registry', icon: BookOpen, roles: ['admin'] },
+    { id: 'my-section', label: 'My Section', icon: Layers, roles: ['teacher'] },
+    { id: 'sections', label: 'Sections Registry', icon: Layers, roles: ['admin', 'data_entry'] },
     { id: 'attendance', label: 'Attendance Ledger', icon: CheckSquare, roles: ['admin', 'teacher', 'data_entry'] },
-    { id: 'fees', label: 'Tuition Fees', icon: CreditCard, roles: ['admin', 'student', 'data_entry'] },
+    { id: 'student-attendance', label: 'My Attendance', icon: CheckSquare, roles: ['student'] },
+    { id: 'student-fees', label: 'My Fee Voucher', icon: CreditCard, roles: ['student'] },
+    { id: 'fees', label: 'Tuition Fees', icon: CreditCard, roles: ['admin', 'data_entry'] },
     { id: 'donations', label: 'Donation Funds', icon: HeartHandshake, roles: ['admin', 'data_entry'] },
-    { id: 'cms', label: 'CMS Notice Board', icon: FileText, roles: ['admin', 'teacher', 'student', 'data_entry'] },
+    { id: 'cms', label: 'CMS Notice Board', icon: FileText, roles: ['admin', 'data_entry'] },
     { id: 'settings', label: 'Supabase Settings', icon: Settings, roles: ['admin'] }
   ];
 

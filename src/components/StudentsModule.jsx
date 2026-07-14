@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, MapPin, Calendar, CheckSquare, ChevronDown, GraduationCap, User, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, ChevronDown, GraduationCap, User, Loader2, BookOpen } from 'lucide-react';
 import EmptyState from './EmptyState';
 import InfoCard from './InfoCard';
 import Badge from './Badge';
@@ -16,7 +16,7 @@ export default function StudentsModule({ userRole, user }) {
       const norm = userRole?.toLowerCase().replace(/[- ]/g, '_') || '';
       if (norm === 'teacher' && user?.id) {
         try {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from('teachers')
             .select('subject')
             .eq('user_id', user.id)
@@ -33,6 +33,7 @@ export default function StudentsModule({ userRole, user }) {
   }, [userRole, user]);
 
   const [students, setStudents] = useState([]);
+  const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
@@ -54,7 +55,8 @@ export default function StudentsModule({ userRole, user }) {
     class_name: 'Grade 1',
     roll_number: '',
     father_name: '',
-    address: ''
+    address: '',
+    section_id: ''
   });
 
   const loadStudents = async () => {
@@ -69,9 +71,19 @@ export default function StudentsModule({ userRole, user }) {
     }
   };
 
+  const loadSections = async () => {
+    try {
+      const data = await database.sections.list();
+      setSections(data);
+    } catch (e) {
+      console.error("Error loading sections in StudentsModule:", e);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       await loadStudents();
+      await loadSections();
     })();
   }, []);
 
@@ -99,7 +111,8 @@ export default function StudentsModule({ userRole, user }) {
       class_name: 'Grade 1',
       roll_number: nextRoll,
       father_name: '',
-      address: ''
+      address: '',
+      section_id: ''
     });
     setEditingStudent(null);
     setIsFormOpen(true);
@@ -112,7 +125,8 @@ export default function StudentsModule({ userRole, user }) {
       class_name: student.class,
       roll_number: student.roll_number,
       father_name: student.father_name,
-      address: student.address || ''
+      address: student.address || '',
+      section_id: student.section_id || ''
     });
     setEditingStudent(student);
     setIsFormOpen(true);
@@ -144,7 +158,14 @@ export default function StudentsModule({ userRole, user }) {
           setIsFormOpen(false);
           loadStudents();
           if (activeStudent?.id === editingStudent.id) {
-            setActiveStudent({ ...activeStudent, ...formData, class: formData.class_name });
+            const matchedSec = sections.find(sec => sec.id === formData.section_id);
+            setActiveStudent({
+              ...activeStudent,
+              ...formData,
+              class: formData.class_name,
+              section_name: matchedSec ? matchedSec.name : '',
+              section_program: matchedSec ? matchedSec.program : ''
+            });
           }
         } else {
           alert("Update failed: " + res.error);
@@ -295,6 +316,7 @@ export default function StudentsModule({ userRole, user }) {
                   infoRows={[
                     { icon: GraduationCap, label: 'Roll Number', value: student.roll_number },
                     { icon: User, label: "Father's Name", value: student.father_name },
+                    { icon: BookOpen, label: 'Section', value: student.section_name ? `${student.section_name} (${student.section_program || ''})` : 'Unassigned' },
                     { icon: Phone, label: 'Contact', value: student.phone || '-' }
                   ]}
                   actions={cardActions}
@@ -334,6 +356,10 @@ export default function StudentsModule({ userRole, user }) {
               <div style={styles.detailItem}>
                 <span style={styles.detailLabel}>Class Assigned</span>
                 <span style={styles.detailVal}>{activeStudent.class}</span>
+              </div>
+              <div style={styles.detailItem}>
+                <span style={styles.detailLabel}>Assigned Section</span>
+                <span style={styles.detailVal}>{activeStudent.section_name ? `${activeStudent.section_name} (${activeStudent.section_program || ''})` : 'Unassigned'}</span>
               </div>
               <div style={styles.detailItem}>
                 <span style={styles.detailLabel}>Father's Name</span>
@@ -468,16 +494,36 @@ export default function StudentsModule({ userRole, user }) {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Father's Name *</label>
-                <input autoComplete="off"
-                  type="text"
-                  required
-                  placeholder="Father's Full Name"
-                  value={formData.father_name}
-                  onChange={(e) => setFormData({ ...formData, father_name: e.target.value })}
-                  className="form-input"
-                />
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Father's Name *</label>
+                  <input autoComplete="off"
+                    type="text"
+                    required
+                    placeholder="Father's Full Name"
+                    value={formData.father_name}
+                    onChange={(e) => setFormData({ ...formData, father_name: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Assigned Section</label>
+                  <div className="select-wrapper">
+                    <select
+                      value={formData.section_id}
+                      onChange={(e) => setFormData({ ...formData, section_id: e.target.value })}
+                      className="form-input"
+                    >
+                      <option value="">Unassigned</option>
+                      {sections.map(sec => (
+                        <option key={sec.id} value={sec.id}>
+                          {sec.name} ({sec.program})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="select-arrow" />
+                  </div>
+                </div>
               </div>
 
               <div className="form-group">
