@@ -111,8 +111,19 @@ export default function UsersModule({ userRole }) {
       setIsSubmitting(true);
       if (editingUser) {
         const { password, ...profileData } = formData;
+        const emailChanged = formData.email !== editingUser.email;
         const res = await database.users.update(editingUser.id, profileData);
         if (res.success) {
+          if (emailChanged) {
+            const { data, error } = await supabase.functions.invoke('update-user-email', {
+              body: { uid: editingUser.id, newEmail: formData.email }
+            });
+            if (error) {
+              alert("Profile updated, but email sync to Auth failed: " + error.message);
+            } else if (data && data.error) {
+              alert("Profile updated, but email sync to Auth failed: " + data.error);
+            }
+          }
           if (password && password.trim().length > 0) {
             const { data, error } = await supabase.functions.invoke('update-user-password', {
               body: { uid: editingUser.id, password }
