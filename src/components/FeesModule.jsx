@@ -61,8 +61,16 @@ export default function FeesModule({ userRole }) {
         due += Number(fee.amount);
         paid += sumPaid;
 
+        let currentStatus = fee.status;
+        if (currentStatus === 'unpaid' && sumPaid >= Number(fee.amount)) {
+          // Auto-heal status mismatch silently in the background
+          database.fees.updateStatus(fee.id, 'paid').catch(console.error);
+          currentStatus = 'paid';
+        }
+
         mappedFees.push({
           ...fee,
+          status: currentStatus,
           total_paid: sumPaid,
           payments
         });

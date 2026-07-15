@@ -32,7 +32,27 @@ export default function StudentFeesModule({ user }) {
             .order('due_date', { ascending: false });
 
           if (feesErr) throw feesErr;
-          setInvoices(feesData || []);
+
+          const healedFees = [];
+          if (feesData) {
+            for (const fee of feesData) {
+              const sumPaid = (fee.fee_payments || []).reduce((s, p) => s + Number(p.amount_paid), 0);
+              if (fee.status === 'unpaid' && sumPaid >= Number(fee.amount)) {
+                // Auto-heal status mismatch silently in the background
+                supabase
+                  .from('fees')
+                  .update({ status: 'paid' })
+                  .eq('id', fee.id)
+                  .then(({ error }) => {
+                    if (error) console.error("Error auto-healing student fee status:", error);
+                  });
+                fee.status = 'paid';
+              }
+              healedFees.push(fee);
+            }
+          }
+
+          setInvoices(healedFees);
         }
       } catch (e) {
         console.error("Error loading student fees:", e);
