@@ -34,7 +34,7 @@ export default function App() {
     '/attendance': ['admin', 'teacher', 'data_entry'],
     '/fees': ['admin', 'data_entry'],
     '/donations': ['admin', 'data_entry'],
-    '/cms': ['admin', 'data_entry'],
+    '/cms': ['admin', 'data_entry', 'student'],
     '/settings': ['admin'],
     '/sections': ['admin', 'data_entry'],
     '/my-section': ['teacher'],
