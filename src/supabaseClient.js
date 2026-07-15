@@ -566,8 +566,19 @@ export const database = {
     recordPayment: async (paymentPayload) => {
       const { fee_id, amount_paid, payment_mode, payment_date } = paymentPayload;
 
-      // 1. Insert payment record
-      const { data, error } = await supabase
+      // 1. Get the current payments first (before insert)
+      const { data: existingPayments, error: fetchError } = await supabase
+        .from('fee_payments')
+        .select('amount_paid')
+        .eq('fee_id', fee_id);
+
+      if (fetchError) return { success: false, error: fetchError.message };
+
+      const previousPaid = (existingPayments || []).reduce((sum, p) => sum + Number(p.amount_paid), 0);
+      const totalPaid = previousPaid + Number(amount_paid);
+
+      // 2. Insert the new payment record
+      const { data, error: insertError } = await supabase
         .from('fee_payments')
         .insert([{
           fee_id,
@@ -577,14 +588,7 @@ export const database = {
         }])
         .select();
 
-      if (error) return { success: false, error: error.message };
-
-      // 2. Sum all payments to auto-update invoice status
-      const { data: allPayments } = await supabase
-        .from('fee_payments')
-        .select('amount_paid')
-        .eq('fee_id', fee_id);
-      const totalPaid = (allPayments || []).reduce((sum, p) => sum + Number(p.amount_paid), 0);
+      if (insertError) return { success: false, error: insertError.message };
 
       // 3. Mark paid if fully settled
       const { data: invoice } = await supabase
@@ -592,6 +596,7 @@ export const database = {
         .select('amount')
         .eq('id', fee_id)
         .single();
+      
       if (invoice && totalPaid >= Number(invoice.amount)) {
         await supabase.from('fees').update({ status: 'paid' }).eq('id', fee_id);
       }
