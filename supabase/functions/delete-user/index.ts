@@ -79,15 +79,21 @@ Deno.serve(async (req) => {
     // Delete auth user
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
-    if (deleteError) {
+    if (deleteError && !/not.*found|does not exist/i.test(deleteError.message || '')) {
       return new Response(
         JSON.stringify({ error: deleteError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Explicitly clean up public.users row just in case
-    await supabaseAdmin.from('users').delete().eq('id', userId);
+    // Explicitly clean up public.users row
+    const { error: dbDeleteError } = await supabaseAdmin.from('users').delete().eq('id', userId);
+    if (dbDeleteError) {
+      return new Response(
+        JSON.stringify({ error: 'Database profile cleanup failed: ' + dbDeleteError.message }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
