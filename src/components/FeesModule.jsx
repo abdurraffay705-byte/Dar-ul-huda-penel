@@ -139,6 +139,17 @@ export default function FeesModule({ userRole }) {
           status: invoiceForm.status
         });
         if (res.success) {
+          if (invoiceForm.status === 'paid' && editingFee.status !== 'paid') {
+            const remainingAmount = Number(invoiceForm.amount) - Number(editingFee.total_paid);
+            if (remainingAmount > 0) {
+              await database.fees.recordPayment({
+                fee_id: editingFee.id,
+                amount_paid: remainingAmount,
+                payment_mode: 'cash',
+                payment_date: new Date().toISOString().split('T')[0]
+              });
+            }
+          }
           setIsInvoiceOpen(false);
           setEditingFee(null);
           loadFeeData();
@@ -153,6 +164,14 @@ export default function FeesModule({ userRole }) {
           status: invoiceForm.status || 'unpaid'
         });
         if (res.success) {
+          if (invoiceForm.status === 'paid') {
+            await database.fees.recordPayment({
+              fee_id: res.data.id,
+              amount_paid: Number(invoiceForm.amount),
+              payment_mode: 'cash',
+              payment_date: new Date().toISOString().split('T')[0]
+            });
+          }
           setIsInvoiceOpen(false);
           loadFeeData();
         } else {
@@ -193,11 +212,30 @@ export default function FeesModule({ userRole }) {
 };
 
 const handleMarkPaid = async (feeId) => {
-  const res = await database.fees.updateStatus(feeId, 'paid');
+  const fee = fees.find(f => f.id === feeId);
+  if (!fee) return;
+  const remainingAmount = Number(fee.amount) - Number(fee.total_paid);
+  if (remainingAmount <= 0) {
+    const res = await database.fees.updateStatus(feeId, 'paid');
+    if (res.success) {
+      loadFeeData();
+    } else {
+      alert('Failed to mark as paid: ' + res.error);
+    }
+    return;
+  }
+
+  const res = await database.fees.recordPayment({
+    fee_id: feeId,
+    amount_paid: remainingAmount,
+    payment_mode: 'cash',
+    payment_date: new Date().toISOString().split('T')[0]
+  });
+
   if (res.success) {
     loadFeeData();
   } else {
-    alert('Failed to mark as paid: ' + res.error);
+    alert('Failed to mark as paid (payment record failed): ' + res.error);
   }
 };
 
