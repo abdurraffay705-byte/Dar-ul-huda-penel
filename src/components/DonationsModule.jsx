@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
 import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X, Trash2, Edit3, ChevronDown, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
-import InfoCard from './InfoCard';
+import DataTable from './DataTable';
+import LoadingSpinner from './LoadingSpinner';
 
 
 export default function DonationsModule({ userRole }) {
@@ -231,11 +232,9 @@ export default function DonationsModule({ userRole }) {
         </div>
       </div>
 
+      {/* DONOR DATA TABLE */}
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Auditing donor sheets...</p>
-        </div>
+        <LoadingSpinner message="Loading donation records..." />
       ) : filteredDonations.length === 0 ? (
         <EmptyState
           icon={donations.length === 0 ? HeartHandshake : Search}
@@ -243,47 +242,63 @@ export default function DonationsModule({ userRole }) {
           message={donations.length === 0 ? "Record a new donation transaction to get started." : "Try clearing filters or adjusting your search query."}
         />
       ) : (
-        <div className="info-card-grid">
-          {filteredDonations.map((donation) => {
-            const cardActions = [];
-            if (isEditable) {
-              cardActions.push({
-                label: 'Edit Details',
-                icon: Edit3,
-                onClick: () => handleOpenEditForm(donation),
-                variant: 'secondary'
-              });
-              cardActions.push({
-                label: 'Delete',
-                icon: Trash2,
-                onClick: () => handleDelete(donation.id),
-                variant: 'danger'
-              });
+        <DataTable
+          columns={[
+            {
+              key: 'donor_name',
+              header: 'Donor Name',
+              type: 'avatar',
+              subtextKey: 'source',
+              sortable: true
+            },
+            {
+              key: 'amount',
+              header: 'Donation Amount',
+              type: 'currency',
+              sortable: true
+            },
+            {
+              key: 'payment_mode',
+              header: 'Payment Mode',
+              type: 'badge',
+              sortable: true
+            },
+            {
+              key: 'created_at',
+              header: 'Receipt Date',
+              sortable: true,
+              render: (d) => (d.created_at ? d.created_at.substring(0, 10) : '-')
             }
-
-            return (
-              <InfoCard
-                key={donation.id}
-                avatarInitial={donation.donor_name.charAt(0)}
-                name={donation.donor_name}
-                badgeLabel={donation.payment_mode}
-                badgeType={donation.payment_mode}
-                infoRows={[
-                  { icon: HeartHandshake, label: 'Charity Source', value: donation.source },
-                  { icon: Calendar, label: 'Receipt Date', value: donation.created_at ? donation.created_at.substring(0, 10) : '-' },
-                  { 
-                    icon: DollarSign, 
-                    label: 'Amount', 
-                    value: `PKR ${Number(donation.amount).toLocaleString()}`,
-                    iconColor: 'var(--color-primary)',
-                    valueStyle: { fontWeight: '800', color: 'var(--color-primary)' }
-                  }
-                ]}
-                actions={cardActions}
-              />
-            );
-          })}
-        </div>
+          ]}
+          data={filteredDonations}
+          emptyIcon={HeartHandshake}
+          emptyTitle="No donations found"
+          emptyMessage="No matching donation transactions found."
+          renderActions={(donation) => (
+            <>
+              {isEditable && (
+                <>
+                  <button
+                    onClick={() => handleOpenEditForm(donation)}
+                    className="btn-secondary"
+                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                    title="Edit Details"
+                  >
+                    <Edit3 size={14} /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(donation.id)}
+                    className="btn-danger"
+                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                    title="Delete"
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        />
       )}
       </div>
       )}

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
 import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3, ChevronDown, Calendar, GraduationCap, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
-import InfoCard from './InfoCard';
+import DataTable from './DataTable';
+import LoadingSpinner from './LoadingSpinner';
 import logoImg from '../assets/logo.jpg';
 
 
@@ -359,12 +360,9 @@ const handlePrint = () => {
         </div>
       </div>
 
-      {/* FEES TABLE LIST */}
+      {/* FEES DATA TABLE */}
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Loading financial invoices...</p>
-        </div>
+        <LoadingSpinner message="Loading fee invoices..." />
       ) : filteredFees.length === 0 ? (
         <EmptyState
           icon={fees.length === 0 ? CreditCard : Search}
@@ -372,78 +370,102 @@ const handlePrint = () => {
           message={fees.length === 0 ? "Record a new payment or generate invoices to get started." : "Try clearing filters or adjusting your search query."}
         />
       ) : (
-        <div className="info-card-grid">
-          {filteredFees.map((fee) => {
-            const isOverdue = new Date(fee.due_date) < new Date() && fee.status === 'unpaid';
-            const cardActions = [];
-            if (canAdd) {
-              cardActions.push({
-                label: 'Edit',
-                icon: Edit3,
-                onClick: () => handleOpenEditInvoiceModal(fee),
-                variant: 'secondary'
-              });
+        <DataTable
+          columns={[
+            {
+              key: 'student_name',
+              header: 'Student Name',
+              type: 'avatar',
+              subtextKey: 'roll_number',
+              sortable: true
+            },
+            {
+              key: 'amount',
+              header: 'Fee Amount',
+              type: 'currency',
+              sortable: true
+            },
+            {
+              key: 'status',
+              header: 'Status',
+              type: 'badge',
+              sortable: true
+            },
+            {
+              key: 'due_date',
+              header: 'Due Date',
+              sortable: true,
+              render: (fee) => {
+                const isOverdue = new Date(fee.due_date) < new Date() && fee.status === 'unpaid';
+                return (
+                  <div>
+                    <div>{fee.due_date}</div>
+                    {isOverdue && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-danger)', fontWeight: 600 }}>OVERDUE</span>
+                    )}
+                  </div>
+                );
+              }
             }
-            if (canAdd && fee.status === 'unpaid') {
-              cardActions.push({
-                label: 'Post Cash',
-                onClick: () => handleOpenPaymentModal(fee),
-                variant: 'primary'
-              });
-            }
-            if (fee.total_paid > 0) {
-              cardActions.push({
-                label: 'Receipt',
-                icon: Printer,
-                onClick: () => handleOpenReceipt(fee),
-                variant: 'secondary'
-              });
-            }
-            if (fee.status === 'unpaid') {
-              cardActions.push({
-                label: 'Mark as Paid',
-                icon: Check,
-                onClick: () => handleMarkPaid(fee.id),
-                variant: 'success'
-              });
-            }
-            if (isEditable) {
-              cardActions.push({
-                label: 'Delete',
-                icon: Trash2,
-                onClick: () => handleDeleteInvoice(fee.id),
-                variant: 'danger'
-              });
-            }
-
-            return (
-              <InfoCard
-                key={fee.id}
-                avatarInitial={fee.student_name ? fee.student_name.charAt(0) : '?'}
-                name={fee.student_name}
-                badgeLabel={fee.status}
-                badgeType={fee.status}
-                infoRows={[
-                  { icon: GraduationCap, label: 'Roll Number', value: fee.roll_number },
-                  { icon: CreditCard, label: 'Invoiced', value: `PKR ${Number(fee.amount).toLocaleString()}` },
-                  { 
-                    icon: Landmark, 
-                    label: 'Total Paid', 
-                    value: `PKR ${Number(fee.total_paid).toLocaleString()}`,
-                    iconColor: 'var(--color-success)',
-                    valueStyle: { fontWeight: '700', color: 'var(--color-success)' }
-                  },
-                  { icon: Calendar, label: 'Due Date', value: fee.due_date }
-                ]}
-                actions={cardActions}
-                style={isOverdue ? {
-                  backgroundColor: '#fef2f2',
-                  borderLeft: '4px solid var(--color-danger)'
-                } : {}}
-              />
-            );
-          })}
-        </div>
+          ]}
+          data={filteredFees}
+          emptyIcon={CreditCard}
+          emptyTitle="No invoices found"
+          emptyMessage="No matching fee invoices found."
+          renderActions={(fee) => (
+            <>
+              {canAdd && fee.status === 'unpaid' && (
+                <button
+                  onClick={() => handleOpenPaymentModal(fee)}
+                  className="btn-primary"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                >
+                  Post Cash
+                </button>
+              )}
+              {fee.total_paid > 0 && (
+                <button
+                  onClick={() => handleOpenReceipt(fee)}
+                  className="btn-secondary"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                  title="Print Receipt"
+                >
+                  <Printer size={14} /> Receipt
+                </button>
+              )}
+              {fee.status === 'unpaid' && (
+                <button
+                  onClick={() => handleMarkPaid(fee.id)}
+                  className="btn-secondary"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#ceead6' }}
+                  title="Mark Paid"
+                >
+                  <Check size={14} /> Paid
+                </button>
+              )}
+              {canAdd && (
+                <button
+                  onClick={() => handleOpenEditInvoiceModal(fee)}
+                  className="btn-secondary"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                  title="Edit Invoice"
+                >
+                  <Edit3 size={14} />
+                </button>
+              )}
+              {isEditable && (
+                <button
+                  onClick={() => handleDeleteInvoice(fee.id)}
+                  className="btn-danger"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                  title="Delete Invoice"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </>
+          )}
+        />
       )}
       </div>
       )}

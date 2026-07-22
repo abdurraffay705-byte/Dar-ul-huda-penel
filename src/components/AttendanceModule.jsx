@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
 import { Calendar, UserCheck, Search, Info, Trash2, ChevronDown, Users } from 'lucide-react';
 import EmptyState from './EmptyState';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function AttendanceModule({ userRole, user }) {
   const [activeTab, setActiveTab] = useState('student'); // 'student' | 'teacher' | 'reports'
@@ -444,10 +445,7 @@ export default function AttendanceModule({ userRole, user }) {
           </div>
 
           {reportLoading ? (
-            <div style={styles.innerLoader}>
-              <div className="spinner" style={styles.spinner}></div>
-              <p style={{ marginTop: 10 }}>Querying ledger logs...</p>
-            </div>
+            <LoadingSpinner message="Querying attendance logs..." />
           ) : reportLogs.length > 0 ? (
             <div className="table-container" style={{ marginTop: '1.5rem' }}>
               <table className="data-table">
@@ -585,10 +583,7 @@ export default function AttendanceModule({ userRole, user }) {
               </div>
 
               {loading ? (
-                <div style={styles.innerLoader}>
-                  <div className="spinner" style={styles.spinner}></div>
-                  <p style={{ marginTop: 10 }}>Fetching daily check sheets...</p>
-                </div>
+                <LoadingSpinner message="Fetching daily check sheets..." />
               ) : filteredSheet.length === 0 ? (
                 <EmptyState
                   icon={attendanceSheet.length === 0 ? Users : Search}

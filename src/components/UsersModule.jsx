@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { database, supabase } from '../supabaseClient';
 import { Search, UserPlus, Edit3, Trash2, X, Phone, Users as UsersIcon, ChevronDown, Loader2, Mail, Fingerprint, Calendar, GraduationCap, User, MapPin, Eye, EyeOff } from 'lucide-react';
 import EmptyState from './EmptyState';
-import InfoCard from './InfoCard';
+import DataTable from './DataTable';
+import Select from './ui/Select';
+import LoadingSpinner from './LoadingSpinner';
 
 
 export default function UsersModule({ userRole }) {
@@ -204,20 +206,18 @@ export default function UsersModule({ userRole }) {
         </div>
 
         <div style={styles.filtersGroup}>
-          <div className="select-wrapper" style={{ width: 'auto' }}>
-            <select
+            <Select
+              items={[
+                { value: '', label: 'All Roles' },
+                { value: 'admin', label: 'Admin' },
+                { value: 'teacher', label: 'Teacher' },
+                { value: 'student', label: 'Student' },
+                { value: 'data_entry', label: 'Data entry' }
+              ]}
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              style={styles.filterSelect}
-            >
-              <option value="">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="teacher">Teacher</option>
-              <option value="student">Student</option>
-              <option value="data_entry">Data entry</option>
-            </select>
-            <ChevronDown size={14} className="select-arrow" />
-          </div>
+              onChange={setRoleFilter}
+              placeholder="Select role"
+            />
 
           {isEditable && (
             <button onClick={handleOpenCreateForm} className="btn-primary">
@@ -227,17 +227,14 @@ export default function UsersModule({ userRole }) {
         </div>
       </div>
 
-      {/* USERS LIST GRID */}
+      {/* USERS DATA TABLE */}
       {error && (
         <div style={styles.errorBanner}>
           ⚠️ Supabase error: {error}
         </div>
       )}
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Loading users...</p>
-        </div>
+        <LoadingSpinner message="Loading system users..." />
       ) : filteredUsers.length === 0 ? (
         <EmptyState
           icon={users.length === 0 ? UsersIcon : Search}
@@ -245,45 +242,64 @@ export default function UsersModule({ userRole }) {
           message={users.length === 0 ? "Create a new user account to get started." : "Try clearing filters or adjusting your search query."}
         />
       ) : (
-        <div className="info-card-grid">
-          {filteredUsers.map((user) => (
-            <InfoCard
-              key={user.id}
-              avatarInitial={(user.full_name || '?').charAt(0)}
-              name={user.full_name}
-              badgeLabel={user.role}
-              badgeType={user.role}
-              infoRows={[
-                { icon: Phone, label: 'Phone', value: user.phone || '-' },
-                user.email && { icon: Mail, label: 'Email', value: user.email },
-                user.cnic && { icon: Fingerprint, label: 'CNIC', value: user.cnic },
-                user.age && { icon: Calendar, label: 'Age', value: `${user.age} years` },
-                user.education && { icon: GraduationCap, label: 'Education', value: user.education },
-                user.father_name && { icon: User, label: "Father's Name", value: user.father_name },
-                user.mother_name && { icon: User, label: "Mother's Name", value: user.mother_name },
-                user.address && { icon: MapPin, label: 'Address', value: user.address }
-              ].filter(Boolean)}
-              actions={
-                isEditable
-                  ? [
-                      {
-                        label: 'Edit Details',
-                        icon: Edit3,
-                        onClick: () => handleOpenEditForm(user),
-                        variant: 'secondary'
-                      },
-                      {
-                        label: 'Remove',
-                        icon: Trash2,
-                        onClick: () => handleDelete(user.id),
-                        variant: 'danger'
-                      }
-                    ]
-                  : []
-              }
-            />
-          ))}
-        </div>
+        <DataTable
+          columns={[
+            {
+              key: 'full_name',
+              header: 'User Name',
+              type: 'avatar',
+              subtextKey: 'email',
+              sortable: true
+            },
+            {
+              key: 'role',
+              header: 'System Role',
+              type: 'badge',
+              sortable: true
+            },
+            {
+              key: 'phone',
+              header: 'Contact Info',
+              sortable: true,
+              render: (u) => (
+                <div>
+                  <div style={{ fontWeight: 500 }}>{u.phone || '-'}</div>
+                  {u.cnic && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>CNIC: {u.cnic}</span>
+                  )}
+                </div>
+              )
+            }
+          ]}
+          data={filteredUsers}
+          emptyIcon={UsersIcon}
+          emptyTitle="No users found"
+          emptyMessage="No matching users found."
+          renderActions={(u) => (
+            <>
+              {isEditable && (
+                <>
+                  <button
+                    onClick={() => handleOpenEditForm(u)}
+                    className="btn-secondary"
+                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                    title="Edit Details"
+                  >
+                    <Edit3 size={14} /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(u.id)}
+                    className="btn-danger"
+                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                    title="Remove"
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        />
       )}
       </div>
       )}

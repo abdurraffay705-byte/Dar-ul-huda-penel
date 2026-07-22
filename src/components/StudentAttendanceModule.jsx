@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { Calendar, UserCheck, Search, Award } from 'lucide-react';
 import EmptyState from './EmptyState';
 import Badge from './Badge';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function StudentAttendanceModule({ user }) {
   const [logs, setLogs] = useState([]);
@@ -48,10 +49,7 @@ export default function StudentAttendanceModule({ user }) {
       <h1 className="section-title">My Attendance History</h1>
 
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Loading attendance record...</p>
-        </div>
+        <LoadingSpinner message="Loading attendance records..." />
       ) : (
         <div style={styles.container}>
           {/* STATS ROW */}

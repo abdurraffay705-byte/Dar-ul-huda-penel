@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
 import { FileText, PlusCircle, Trash2, Calendar, AlertTriangle, BellRing, Edit3, ChevronDown, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
-import InfoCard from './InfoCard';
+import DataTable from './DataTable';
+import LoadingSpinner from './LoadingSpinner';
 
 
 export default function CMSModule({ userRole }) {
@@ -205,10 +206,7 @@ export default function CMSModule({ userRole }) {
           <h3 style={styles.boxTitle}><BellRing size={16} color="var(--color-primary-light)" style={{ marginRight: 6 }} /> Active Announcements</h3>
 
           {loading ? (
-            <div style={styles.innerLoader}>
-              <div className="spinner" style={styles.spinner}></div>
-              <p style={{ marginTop: 10 }}>Loading timeline board...</p>
-            </div>
+            <LoadingSpinner message="Loading announcements..." />
           ) : notices.length === 0 ? (
             <EmptyState
               icon={FileText}
@@ -216,43 +214,56 @@ export default function CMSModule({ userRole }) {
               message="Publish a new announcement notice to display on the board."
             />
           ) : (
-            <div style={styles.noticeStream}>
-                {notices.map((n) => {
-                  const cardActions = [];
-                  if (isAdmin) {
-                    cardActions.push({
-                      label: 'Edit Notice',
-                      icon: Edit3,
-                      onClick: () => handleOpenEdit(n),
-                      variant: 'secondary'
-                    });
-                    cardActions.push({
-                      label: 'Pull Down Announcement',
-                      icon: Trash2,
-                      onClick: () => handleDelete(n.id),
-                      variant: 'danger'
-                    });
-                  }
-
-                  return (
-                    <InfoCard
-                      key={n.id}
-                      name={n.title}
-                      badgeLabel={`${n.urgency} Urgency`}
-                      badgeType={n.urgency}
-                      description={n.content}
-                      infoRows={[
-                        { icon: Calendar, label: 'Published Date', value: n.published_date }
-                      ]}
-                      actions={cardActions}
-                      style={{
-                        borderLeft: `5px solid ${n.urgency === 'High' ? 'var(--color-danger)' : (n.urgency === 'Medium' ? 'var(--color-warning)' : 'var(--color-info)')}`,
-                        backgroundColor: n.urgency === 'High' ? '#fffbfb' : '#ffffff'
-                      }}
-                    />
-                  );
-                })}
-              </div>
+            <DataTable
+              columns={[
+                {
+                  key: 'title',
+                  header: 'Announcement Title',
+                  type: 'avatar',
+                  subtextKey: 'content',
+                  sortable: true
+                },
+                {
+                  key: 'urgency',
+                  header: 'Urgency Priority',
+                  type: 'badge',
+                  sortable: true
+                },
+                {
+                  key: 'published_date',
+                  header: 'Published Date',
+                  sortable: true
+                }
+              ]}
+              data={notices}
+              emptyIcon={FileText}
+              emptyTitle="No announcements published"
+              emptyMessage="Publish a new announcement notice to display on the board."
+              renderActions={(n) => (
+                <>
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => handleOpenEdit(n)}
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Edit Notice"
+                      >
+                        <Edit3 size={14} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(n.id)}
+                        className="btn-danger"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Delete Announcement"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            />
           )}
         </div>
       </div>

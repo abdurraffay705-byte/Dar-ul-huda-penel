@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Search, GraduationCap, Layers } from 'lucide-react';
 import EmptyState from './EmptyState';
-import InfoCard from './InfoCard';
+import DataTable from './DataTable';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function MySectionModule({ user }) {
   const [sections, setSections] = useState([]);
@@ -72,10 +73,7 @@ export default function MySectionModule({ user }) {
       <h1 className="section-title">My Assigned Sections</h1>
 
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Loading section rosters...</p>
-        </div>
+        <LoadingSpinner message="Loading section rosters..." />
       ) : sections.length === 0 ? (
         <EmptyState
           icon={Layers}
@@ -84,25 +82,34 @@ export default function MySectionModule({ user }) {
         />
       ) : (
         <div style={styles.container}>
-          {/* SECTION CARDS */}
-          <div style={styles.cardsGrid}>
-            {sections.map(sec => {
-              const enrolledCount = sec.students?.length || 0;
-              return (
-                <InfoCard
-                  key={sec.id}
-                  avatarInitial={sec.name.charAt(0).toUpperCase()}
-                  name={sec.name}
-                  badgeLabel={sec.program}
-                  badgeType="course"
-                  infoRows={[
-                    { icon: GraduationCap, label: 'Enrolled', value: `${enrolledCount} students` }
-                  ]}
-                  actions={[]} // Read-only
-                />
-              );
-            })}
-          </div>
+          {/* SECTION TABLE */}
+          <DataTable
+            columns={[
+              {
+                key: 'name',
+                header: 'Section Name',
+                type: 'avatar',
+                subtextKey: 'program',
+                sortable: true
+              },
+              {
+                key: 'program',
+                header: 'Program / Grade',
+                type: 'badge',
+                sortable: true
+              },
+              {
+                key: 'students',
+                header: 'Enrolled Count',
+                sortable: true,
+                render: (sec) => `${sec.students?.length || 0} enrolled`
+              }
+            ]}
+            data={sections}
+            emptyIcon={Layers}
+            emptyTitle="No assigned sections"
+            emptyMessage="You are not assigned to teach any section."
+          />
 
           {/* STUDENT LIST */}
           <div className="glass-panel" style={styles.studentsListCard}>

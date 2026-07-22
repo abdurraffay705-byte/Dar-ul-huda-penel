@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { database, supabase } from '../supabaseClient';
+import { database, supabase, uploadPhoto } from '../supabaseClient';
 import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign, ChevronDown, Loader2 } from 'lucide-react';
 import EmptyState from './EmptyState';
-import InfoCard from './InfoCard';
-
+import DataTable from './DataTable';
+import LoadingSpinner from './LoadingSpinner';
+import Badge from './Badge';
+import Select from './ui/Select';
 
 export default function TeachersModule({ userRole }) {
   const [teachers, setTeachers] = useState([]);
@@ -16,6 +18,25 @@ export default function TeachersModule({ userRole }) {
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Photo Upload State
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (JPEG, PNG, WEBP).');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size exceeds 2MB limit. Please choose a smaller image.');
+      return;
+    }
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+  
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -24,7 +45,8 @@ export default function TeachersModule({ userRole }) {
     subject: 'Hifz Instruction',
     qualification: '',
     salary: '',
-    joining_date: new Date().toISOString().split('T')[0]
+    joining_date: new Date().toISOString().split('T')[0],
+    photo_url: ''
   });
 
   const loadTeachers = async () => {
@@ -40,25 +62,27 @@ export default function TeachersModule({ userRole }) {
   };
 
   useEffect(() => {
-    // Wrapping in async IIFE to prevent synchronous setState lint error
     (async () => {
       await loadTeachers();
     })();
   }, []);
 
   const handleOpenCreateForm = () => {
-  setFormData({
-    full_name: '',
-    phone: '',
-    email: '',
-    password: '',
-    subject: 'Hifz Instruction',
-    qualification: '',
-    salary: '',
-    joining_date: new Date().toISOString().split('T')[0]
-  });
-  setEditingTeacher(null);
-  setIsFormOpen(true);
+    setFormData({
+      full_name: '',
+      phone: '',
+      email: '',
+      password: '',
+      subject: 'Hifz Instruction',
+      qualification: '',
+      salary: '',
+      joining_date: new Date().toISOString().split('T')[0],
+      photo_url: ''
+    });
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setEditingTeacher(null);
+    setIsFormOpen(true);
   };
 
   const handleOpenEditForm = (teacher) => {
@@ -70,8 +94,11 @@ export default function TeachersModule({ userRole }) {
       subject: teacher.subject,
       qualification: teacher.qualification || '',
       salary: teacher.salary,
-      joining_date: teacher.joining_date
+      joining_date: teacher.joining_date,
+      photo_url: teacher.photo_url || ''
     });
+    setPhotoFile(null);
+    setPhotoPreview(teacher.photo_url || null);
     setEditingTeacher(teacher);
     setIsFormOpen(true);
   };
@@ -90,13 +117,19 @@ export default function TeachersModule({ userRole }) {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
-    const cleanData = {
-      ...formData,
-      salary: Number(formData.salary)
-    };
-
     try {
       setIsSubmitting(true);
+      let finalPhotoUrl = formData.photo_url;
+      if (photoFile) {
+        finalPhotoUrl = await uploadPhoto(photoFile);
+      }
+
+      const cleanData = {
+        ...formData,
+        salary: Number(formData.salary),
+        photo_url: finalPhotoUrl
+      };
+
       if (editingTeacher) {
         const res = await database.teachers.update(editingTeacher.id, {
           ...cleanData,
@@ -164,16 +197,16 @@ export default function TeachersModule({ userRole }) {
   return (
     <>
       {!isFormOpen && (
-        <div className="fade-in">
-      <h1 className="section-title">Teachers Registry</h1>
+        <div className="fade-in" style={styles.container}>
+      <h1 className="section-title">Instructors Registry</h1>
 
-      {/* FILTER & ACTIONS BAR */}
+      {/* FILTER ACTION BAR */}
       <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredTeachers.length === 0 ? 'configBarExpanded' : ''}`}>
         <div style={styles.searchBox} className="filter-bar__search">
-          <Search size={16} color="#64748b" />
+          <Search size={18} color="var(--color-text-muted)" />
           <input autoComplete="off"
             type="text"
-            placeholder="Search by instructor name, subject, qualification..."
+            placeholder="Search by instructor name, subject..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={styles.searchInput}
@@ -181,21 +214,19 @@ export default function TeachersModule({ userRole }) {
         </div>
 
         <div style={styles.filtersGroup} className="filter-bar__controls">
-          <div className="select-wrapper" style={{ width: 'auto' }}>
-            <select 
-              value={subjectFilter} 
-              onChange={(e) => setSubjectFilter(e.target.value)} 
-              style={styles.filterSelect}
-            >
-              <option value="">All Subjects</option>
-              <option value="Hifz Instruction">Hifz Instruction</option>
-              <option value="Arabic Language">Arabic Language</option>
-              <option value="Islamic Studies">Islamic Studies</option>
-              <option value="Mathematics & Science">Mathematics & Science</option>
-              <option value="English Language">English Language</option>
-            </select>
-            <ChevronDown size={14} className="select-arrow" />
-          </div>
+            <Select
+              items={[
+                { value: '', label: 'All Subjects' },
+                { value: 'Hifz Instruction', label: 'Hifz Instruction' },
+                { value: 'Tajweed & Qiraat', label: 'Tajweed & Qiraat' },
+                { value: 'Islamic Studies', label: 'Islamic Studies' },
+                { value: 'Arabic Language', label: 'Arabic Language' },
+                { value: 'Primary Sciences', label: 'Primary Sciences' }
+              ]}
+              value={subjectFilter}
+              onChange={setSubjectFilter}
+              placeholder="Select subject"
+            />
 
           {canAdd && (
             <button onClick={handleOpenCreateForm} className="btn-primary">
@@ -205,12 +236,9 @@ export default function TeachersModule({ userRole }) {
         </div>
       </div>
 
-      {/* TEACHERS LIST GRID */}
+      {/* TEACHERS DATA TABLE */}
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Loading registries...</p>
-        </div>
+        <LoadingSpinner message="Loading instructor registry..." />
       ) : filteredTeachers.length === 0 ? (
         <EmptyState
           icon={teachers.length === 0 ? Award : Search}
@@ -218,56 +246,70 @@ export default function TeachersModule({ userRole }) {
           message={teachers.length === 0 ? "Appoint a new teacher to build the registry." : "Try clearing filters or adjusting your search query."}
         />
       ) : (
-        <div className="info-card-grid">
-          {filteredTeachers.map((teacher) => {
-            const cardActions = [];
-            if (isEditable || norm === 'data_entry') {
-              cardActions.push({
-                label: 'Edit Details',
-                icon: Edit3,
-                onClick: () => handleOpenEditForm(teacher),
-                variant: 'secondary'
-              });
+        <DataTable
+          columns={[
+            {
+              key: 'full_name',
+              header: 'Instructor Name',
+              type: 'avatar',
+              sortable: true
+            },
+            {
+              key: 'subject',
+              header: 'Subject / Role',
+              sortable: true,
+              render: (teacher) => (
+                <div>
+                  <Badge label={teacher.subject} type="teacher" />
+                  {teacher.qualification && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block', marginTop: 2 }}>
+                      {teacher.qualification}
+                    </span>
+                  )}
+                </div>
+              )
+            },
+            {
+              key: 'phone',
+              header: 'Contact Phone',
+              sortable: true,
+              render: (teacher) => (
+                <div>
+                  <div>{teacher.phone || '-'}</div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Joined: {teacher.joining_date}</span>
+                </div>
+              )
             }
-            if (isEditable) {
-              cardActions.push({
-                label: 'Remove',
-                icon: Trash2,
-                onClick: () => handleDelete(teacher.id),
-                variant: 'danger'
-              });
-            }
-
-            const infoRows = [
-              { icon: Award, label: 'Subject', value: teacher.subject, iconColor: 'var(--color-accent)' },
-              { icon: Award, label: 'Qualification', value: teacher.qualification || '-' },
-              { icon: Phone, label: 'Phone', value: teacher.phone || '-' }
-            ];
-
-            if (isEditable) {
-              infoRows.push({
-                icon: DollarSign,
-                label: 'Salary',
-                value: `PKR ${Number(teacher.salary).toLocaleString()}`,
-                iconColor: '#10b981',
-                valueStyle: { fontWeight: '750', color: 'var(--color-primary)' }
-              });
-            }
-
-            return (
-              <InfoCard
-                key={teacher.id}
-                avatarInitial={teacher.full_name.charAt(0)}
-                name={teacher.full_name}
-                subtitle={`Joined: ${teacher.joining_date}`}
-                badgeLabel="Teacher"
-                badgeType="teacher"
-                infoRows={infoRows}
-                actions={cardActions}
-              />
-            );
-          })}
-        </div>
+          ]}
+          data={filteredTeachers}
+          emptyIcon={Award}
+          emptyTitle="No instructors found"
+          emptyMessage="No matching instructors found."
+          renderActions={(teacher) => (
+            <>
+              {(isEditable || norm === 'data_entry') && (
+                <button
+                  onClick={() => handleOpenEditForm(teacher)}
+                  className="btn-secondary"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                  title="Edit Details"
+                >
+                  <Edit3 size={14} /> Edit
+                </button>
+              )}
+              {isEditable && (
+                <button
+                  onClick={() => handleDelete(teacher.id)}
+                  className="btn-danger"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                  title="Delete"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              )}
+            </>
+          )}
+        />
       )}
       </div>
       )}
@@ -284,6 +326,27 @@ export default function TeachersModule({ userRole }) {
             </div>
 
             <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
+              {/* PHOTO UPLOAD & PREVIEW */}
+              <div className="photo-upload-container">
+                <div className="photo-preview-circle">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="photo-preview-img" />
+                  ) : (
+                    formData.full_name ? formData.full_name.charAt(0).toUpperCase() : 'T'
+                  )}
+                </div>
+                <div className="photo-upload-input-group">
+                  <label className="photo-upload-label">Instructor Profile Photo</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    style={{ fontSize: '0.82rem' }}
+                  />
+                  <span className="photo-upload-hint">Accepted formats: JPG, PNG, WEBP (Max 2MB)</span>
+                </div>
+              </div>
+
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Full Name *</label>

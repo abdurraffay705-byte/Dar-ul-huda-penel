@@ -19,6 +19,7 @@ import StudentAttendanceModule from './components/StudentAttendanceModule';
 import StudentFeesModule from './components/StudentFeesModule';
 
 import { Menu, X } from 'lucide-react';
+import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -63,7 +64,7 @@ export default function App() {
         if (!mounted) return;
 
         if (currentUser) {
-          setUser(currentUser);
+           setUser(currentUser);
           setDefaultTabForRole(currentUser.role);
         }
       } catch (err) {
@@ -231,7 +232,7 @@ export default function App() {
 
                       {/* MAIN CONTENT WORKSPACE VIEWPORT */}
                       <main style={styles.mainContent}>
-                        {element}
+                         <ErrorBoundary>{element}</ErrorBoundary>
                       </main>
                     </div>
                   );

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import Badge from './Badge';
+import LoadingSpinner from './LoadingSpinner';
 
 
 export default function DashboardHome({ setActiveTab, userRole, user }) {
@@ -167,12 +168,7 @@ export default function DashboardHome({ setActiveTab, userRole, user }) {
   }, [userRole, user]);
 
   if (loading) {
-    return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.spinner}></div>
-        <p style={{ marginTop: 15, color: 'var(--color-primary)' }}>Loading statistics dashboard...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading statistics dashboard..." />;
   }
 
   // Chart parameters
@@ -198,57 +194,57 @@ export default function DashboardHome({ setActiveTab, userRole, user }) {
 
         {/* SIMPLIFIED METRIC GRID */}
         <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-          <div className="glass-panel stat-card" onClick={() => navigate('/my-section')} style={{ cursor: 'pointer' }}>
-            <div>
-              <span style={styles.statLabel}>Assigned Sections</span>
-              <h2 style={styles.statValue}>{stats.sectionsCount}</h2>
-              <span style={styles.statTrend}><TrendingUp size={12} /> View sections details</span>
-            </div>
-            <div className="stat-icon green">
-              <Users size={24} />
-            </div>
-          </div>
-
-          <div className="glass-panel stat-card" onClick={() => navigate('/my-section')} style={{ cursor: 'pointer' }}>
-            <div>
-              <span style={styles.statLabel}>My Students</span>
-              <h2 style={styles.statValue}>{stats.studentsCount}</h2>
-              <span style={styles.statTrend}><TrendingUp size={12} /> Enrolled students registry</span>
-            </div>
-            <div className="stat-icon blue">
-              <Users size={24} />
-            </div>
-          </div>
-        </div>
-
-        {/* NOTICES BANNER */}
-        <div className="glass-panel" style={styles.noticesCard}>
-          <div style={styles.cardHeader}>
-            <h3 style={styles.cardTitle}><Bell size={18} style={{ verticalAlign: 'middle', marginRight: 8, color: 'var(--color-accent)' }} /> Active Notices & Announcements</h3>
-          </div>
-
-          <div style={styles.noticesGrid}>
-            {notices.length === 0 ? (
-              <p style={styles.emptyText}>No active notices posted on the CMS.</p>
-            ) : (
-              notices.map((n) => (
-                <div key={n.id} style={{
-                  ...styles.noticeItem,
-                  borderLeftColor: n.urgency === 'High' ? 'var(--color-danger)' : (n.urgency === 'Medium' ? 'var(--color-warning)' : 'var(--color-info)')
-                }}>
-                  <div style={styles.noticeMeta}>
-                    <span className={`badge ${n.urgency === 'High' ? 'danger' : (n.urgency === 'Medium' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>
-                      {n.urgency} Priority
-                    </span>
-                    <span style={styles.noticeDate}>{n.published_date}</span>
-                  </div>
-                  <h4 style={styles.noticeTitle}>{n.title}</h4>
-                  <p style={styles.noticeContent}>{n.content}</p>
+              <div className="glass-panel stat-card" onClick={() => navigate('/my-section')} style={{ cursor: 'pointer' }}>
+                <div>
+                  <span style={styles.statLabel}>Assigned Sections</span>
+                  <h2 style={styles.statValue}>{stats.sectionsCount}</h2>
+                  <span style={styles.statTrend}><TrendingUp size={12} /> View sections details</span>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+                <div className="stat-icon green">
+                  <Users size={24} />
+                </div>
+              </div>
+
+              <div className="glass-panel stat-card" onClick={() => navigate('/my-section')} style={{ cursor: 'pointer' }}>
+                <div>
+                  <span style={styles.statLabel}>My Students</span>
+                  <h2 style={styles.statValue}>{stats.studentsCount}</h2>
+                  <span style={styles.statTrend}><TrendingUp size={12} /> Enrolled students registry</span>
+                </div>
+                <div className="stat-icon blue">
+                  <Users size={24} />
+                </div>
+              </div>
+            </div>
+
+            {/* NOTICES BANNER */}
+            <div className="glass-panel" style={styles.noticesCard}>
+              <div style={styles.cardHeader}>
+                <h3 style={styles.cardTitle}><Bell size={18} style={{ verticalAlign: 'middle', marginRight: 8, color: 'var(--color-accent)' }} /> Active Notices & Announcements</h3>
+              </div>
+
+              <div style={styles.noticesGrid}>
+                {notices.length === 0 ? (
+                  <p style={styles.emptyText}>No active notices posted on the CMS.</p>
+                ) : (
+                  notices.map((n) => (
+                    <div key={n.id} style={{
+                      ...styles.noticeItem,
+                      borderLeftColor: n.urgency === 'High' ? 'var(--color-danger)' : (n.urgency === 'Medium' ? 'var(--color-warning)' : 'var(--color-info)')
+                    }}>
+                      <div style={styles.noticeMeta}>
+                        <span className={`badge ${n.urgency === 'High' ? 'danger' : (n.urgency === 'Medium' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>
+                          {n.urgency} Priority
+                        </span>
+                        <span style={styles.noticeDate}>{n.published_date}</span>
+                      </div>
+                      <h4 style={styles.noticeTitle}>{n.title}</h4>
+                      <p style={styles.noticeContent}>{n.content}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
       </div>
     );
   }

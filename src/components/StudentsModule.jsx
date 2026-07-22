@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { database, supabase } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, ChevronDown, GraduationCap, User, Loader2, BookOpen } from 'lucide-react';
+import { database, supabase, uploadPhoto } from '../supabaseClient';
+import { Search, UserPlus, Edit3, Trash2, X, Eye, Phone, ChevronDown, GraduationCap, User, Loader2, BookOpen, Upload } from 'lucide-react';
 import EmptyState from './EmptyState';
-import InfoCard from './InfoCard';
+import DataTable from './DataTable';
+import LoadingSpinner from './LoadingSpinner';
 import Badge from './Badge';
 
 
@@ -103,6 +104,25 @@ export default function StudentsModule({ userRole, user }) {
     }
   };
 
+  // Photo Upload States
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (JPEG, PNG, WEBP).');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size exceeds 2MB. Please choose a smaller image.');
+      return;
+    }
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
   const handleOpenCreateForm = () => {
     const nextRoll = `DUH-2026-${String(students.length + 1).padStart(3, '0')}`;
     setFormData({
@@ -112,8 +132,11 @@ export default function StudentsModule({ userRole, user }) {
       roll_number: nextRoll,
       father_name: '',
       address: '',
-      section_id: ''
+      section_id: '',
+      photo_url: ''
     });
+    setPhotoFile(null);
+    setPhotoPreview(null);
     setEditingStudent(null);
     setIsFormOpen(true);
   };
@@ -126,8 +149,11 @@ export default function StudentsModule({ userRole, user }) {
       roll_number: student.roll_number,
       father_name: student.father_name,
       address: student.address || '',
-      section_id: student.section_id || ''
+      section_id: student.section_id || '',
+      photo_url: student.photo_url || ''
     });
+    setPhotoFile(null);
+    setPhotoPreview(student.photo_url || null);
     setEditingStudent(student);
     setIsFormOpen(true);
   };
@@ -148,10 +174,20 @@ export default function StudentsModule({ userRole, user }) {
     e.preventDefault();
     try {
       setIsSubmitting(true);
+      let finalPhotoUrl = formData.photo_url;
+      if (photoFile) {
+        finalPhotoUrl = await uploadPhoto(photoFile);
+      }
+
+      const payload = {
+        ...formData,
+        photo_url: finalPhotoUrl
+      };
+
       if (editingStudent) {
         // Update
         const res = await database.students.update(editingStudent.id, {
-          ...formData,
+          ...payload,
           user_id: editingStudent.user_id
         });
         if (res.success) {
@@ -161,7 +197,7 @@ export default function StudentsModule({ userRole, user }) {
             const matchedSec = sections.find(sec => sec.id === formData.section_id);
             setActiveStudent({
               ...activeStudent,
-              ...formData,
+              ...payload,
               class: formData.class_name,
               section_name: matchedSec ? matchedSec.name : '',
               section_program: matchedSec ? matchedSec.program : ''
@@ -172,7 +208,7 @@ export default function StudentsModule({ userRole, user }) {
         }
       } else {
         // Create
-        const res = await database.students.create(formData);
+        const res = await database.students.create(payload);
         if (res.success) {
           setIsFormOpen(false);
           loadStudents();
@@ -264,10 +300,7 @@ export default function StudentsModule({ userRole, user }) {
 
       {/* DUAL WORKSPACE SPLIT */}
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Loading rosters...</p>
-        </div>
+        <LoadingSpinner message="Loading student rosters..." />
       ) : filteredStudents.length === 0 ? (
         <EmptyState
           icon={students.length === 0 ? GraduationCap : Search}
@@ -276,58 +309,81 @@ export default function StudentsModule({ userRole, user }) {
         />
       ) : (
       <div style={styles.workspace}>
-        {/* ROSTER CARD GRID */}
+        {/* ROSTER DATA TABLE */}
         <div style={{ ...styles.tableArea, width: activeStudent ? '60%' : '100%' }}>
-          <div className="info-card-grid">
-            {filteredStudents.map((student) => {
-              const isActive = activeStudent?.id === student.id;
-              const cardActions = [
-                {
-                  label: 'View Profile',
-                  icon: Eye,
-                  onClick: () => handleViewDetails(student),
-                  variant: 'secondary'
-                }
-              ];
-              if (canEditStudent(student)) {
-                cardActions.push({
-                  label: 'Edit Details',
-                  icon: Edit3,
-                  onClick: () => handleOpenEditForm(student),
-                  variant: 'secondary'
-                });
+          <DataTable
+            columns={[
+              {
+                key: 'full_name',
+                header: 'Student Name',
+                type: 'avatar',
+                subtextKey: 'roll_number',
+                sortable: true
+              },
+              {
+                key: 'class',
+                header: 'Class / Section',
+                sortable: true,
+                render: (student) => (
+                  <div>
+                    <Badge label={student.class} type="student" />
+                    {student.section_name && (
+                      <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block', marginTop: 2 }}>
+                        {student.section_name} ({student.section_program || ''})
+                      </span>
+                    )}
+                  </div>
+                )
+              },
+              {
+                key: 'phone',
+                header: 'Guardian Contact',
+                sortable: true,
+                render: (student) => (
+                  <div>
+                    <div style={{ fontWeight: 500 }}>{student.phone || '-'}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Father: {student.father_name}</div>
+                  </div>
+                )
               }
-              if (canDeleteStudent()) {
-                cardActions.push({
-                  label: 'Delete',
-                  icon: Trash2,
-                  onClick: () => handleDelete(student.id),
-                  variant: 'danger'
-                });
-              }
-
-              return (
-                <InfoCard
-                  key={student.id}
-                  avatarInitial={student.full_name.charAt(0)}
-                  name={student.full_name}
-                  badgeLabel={student.class}
-                  badgeType="student"
-                  infoRows={[
-                    { icon: GraduationCap, label: 'Roll Number', value: student.roll_number },
-                    { icon: User, label: "Father's Name", value: student.father_name },
-                    { icon: BookOpen, label: 'Section', value: student.section_name ? `${student.section_name} (${student.section_program || ''})` : 'Unassigned' },
-                    { icon: Phone, label: 'Contact', value: student.phone || '-' }
-                  ]}
-                  actions={cardActions}
-                  style={isActive ? {
-                    backgroundColor: '#fdf8ec',
-                    borderLeft: '4px solid var(--color-accent)'
-                  } : {}}
-                />
-              );
-            })}
-          </div>
+            ]}
+            data={filteredStudents}
+            emptyIcon={GraduationCap}
+            emptyTitle={students.length === 0 ? "No students registered" : "No matching students found"}
+            emptyMessage={students.length === 0 ? "Admit a new student to build the roster." : "Try clearing filters or adjusting your search query."}
+            renderActions={(student) => (
+              <>
+                <button
+                  onClick={() => handleViewDetails(student)}
+                  className="btn-secondary"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                  title="View Details"
+                >
+                  <Eye size={14} /> Profile
+                </button>
+                {canEditStudent(student) && (
+                  <button
+                    onClick={() => handleOpenEditForm(student)}
+                    className="btn-secondary"
+                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                    title="Edit Details"
+                  >
+                    <Edit3 size={14} /> Edit
+                  </button>
+                )}
+                {canDeleteStudent() && (
+                  <button
+                    onClick={() => handleDelete(student.id)}
+                    className="btn-danger"
+                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                    title="Delete"
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                )}
+              </>
+            )}
+          />
         </div>
 
         {/* DETAILED STUDENT WORKSPACE PROFILE */}
@@ -436,6 +492,27 @@ export default function StudentsModule({ userRole, user }) {
             </div>
             
             <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
+              {/* PHOTO UPLOAD & PREVIEW */}
+              <div className="photo-upload-container">
+                <div className="photo-preview-circle">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="photo-preview-img" />
+                  ) : (
+                    formData.full_name ? formData.full_name.charAt(0).toUpperCase() : 'S'
+                  )}
+                </div>
+                <div className="photo-upload-input-group">
+                  <label className="photo-upload-label">Student Profile Photo</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    style={{ fontSize: '0.82rem' }}
+                  />
+                  <span className="photo-upload-hint">Accepted formats: JPG, PNG, WEBP (Max 2MB)</span>
+                </div>
+              </div>
+
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Full Name *</label>

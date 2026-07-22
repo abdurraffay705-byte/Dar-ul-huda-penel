@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
 import { BookOpen, PlusCircle, Edit3, Trash2, X, GraduationCap, ChevronDown } from 'lucide-react';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function CoursesModule({ userRole }) {
   const [courses, setCourses] = useState([]);
@@ -127,10 +128,7 @@ export default function CoursesModule({ userRole }) {
 
       {/* COURSES CARD GRID */}
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Loading courses curriculum...</p>
-        </div>
+        <LoadingSpinner message="Loading courses curriculum..." />
       ) : filteredCourses.length === 0 ? (
         <div style={styles.noData}>No courses registered in curriculum registry.</div>
       ) : (

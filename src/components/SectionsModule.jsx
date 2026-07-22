@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
 import { Search, PlusCircle, Edit3, Trash2, X, GraduationCap, User, Layers, Loader2, ChevronDown } from 'lucide-react';
 import EmptyState from './EmptyState';
-import InfoCard from './InfoCard';
+import DataTable from './DataTable';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function SectionsModule({ userRole }) {
   const [sections, setSections] = useState([]);
@@ -154,10 +155,7 @@ export default function SectionsModule({ userRole }) {
 
           {/* SECTIONS CARD GRID */}
           {loading ? (
-            <div style={styles.innerLoader}>
-              <div className="spinner" style={styles.spinner}></div>
-              <p style={{ marginTop: 10 }}>Loading sections...</p>
-            </div>
+            <LoadingSpinner message="Loading sections..." />
           ) : filteredSections.length === 0 ? (
             <EmptyState
               icon={sections.length === 0 ? Layers : Search}
@@ -165,43 +163,63 @@ export default function SectionsModule({ userRole }) {
               message={sections.length === 0 ? "Create a new section to begin assigning students." : "Try adjusting your search query."}
             />
           ) : (
-            <div className="info-card-grid">
-              {filteredSections.map((sec) => {
-                const cardActions = [];
-                if (isEditable) {
-                  cardActions.push({
-                    label: 'Edit Details',
-                    icon: Edit3,
-                    onClick: () => handleOpenEditForm(sec),
-                    variant: 'secondary'
-                  });
-                  cardActions.push({
-                    label: 'Remove',
-                    icon: Trash2,
-                    onClick: () => handleDelete(sec.id),
-                    variant: 'danger'
-                  });
+            <DataTable
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Section Name',
+                  type: 'avatar',
+                  subtextKey: 'program',
+                  sortable: true
+                },
+                {
+                  key: 'program',
+                  header: 'Program / Grade',
+                  type: 'badge',
+                  sortable: true
+                },
+                {
+                  key: 'teacher',
+                  header: 'Assigned Teacher',
+                  sortable: true,
+                  render: (sec) => sec.teachers?.users?.full_name || 'Unassigned'
+                },
+                {
+                  key: 'students',
+                  header: 'Enrolled Students',
+                  sortable: true,
+                  render: (sec) => `${sec.students?.length || 0} enrolled`
                 }
-
-                const assignedTeacherName = sec.teachers?.users?.full_name || 'Unassigned';
-                const enrolledCount = sec.students?.length || 0;
-
-                return (
-                  <InfoCard
-                    key={sec.id}
-                    avatarInitial={sec.name.charAt(0).toUpperCase()}
-                    name={sec.name}
-                    badgeLabel={sec.program}
-                    badgeType="course" // reuse badge styling for program label
-                    infoRows={[
-                      { icon: User, label: 'Teacher', value: assignedTeacherName, iconColor: 'var(--color-accent)' },
-                      { icon: GraduationCap, label: 'Students', value: `${enrolledCount} enrolled` }
-                    ]}
-                    actions={cardActions}
-                  />
-                );
-              })}
-            </div>
+              ]}
+              data={filteredSections}
+              emptyIcon={Layers}
+              emptyTitle="No sections found"
+              emptyMessage="No matching sections found."
+              renderActions={(sec) => (
+                <>
+                  {isEditable && (
+                    <>
+                      <button
+                        onClick={() => handleOpenEditForm(sec)}
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Edit Section"
+                      >
+                        <Edit3 size={14} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(sec.id)}
+                        className="btn-danger"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Delete Section"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            />
           )}
         </div>
       )}

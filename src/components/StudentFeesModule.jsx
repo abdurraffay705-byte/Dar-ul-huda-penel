@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { CreditCard, Receipt, ArrowUpRight } from 'lucide-react';
 import EmptyState from './EmptyState';
 import Badge from './Badge';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function StudentFeesModule({ user }) {
   const [invoices, setInvoices] = useState([]);
@@ -77,10 +78,7 @@ export default function StudentFeesModule({ user }) {
       <h1 className="section-title">My Fee Voucher Ledger</h1>
 
       {loading ? (
-        <div style={styles.innerLoader}>
-          <div className="spinner" style={styles.spinner}></div>
-          <p style={{ marginTop: 10 }}>Loading fee ledger...</p>
-        </div>
+        <LoadingSpinner message="Loading fee ledger..." />
       ) : invoices.length === 0 ? (
         <EmptyState
           icon={CreditCard}

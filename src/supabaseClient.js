@@ -168,6 +168,42 @@ export const auth = {
 // On error: returns { success: false, error: message }.
 // No mock fallback, no localStorage fake data.
 // ─────────────────────────────────────────────────────────────
+// ── PHOTO UPLOAD HELPER ────────────────────────────────────
+export const uploadPhoto = async (file, bucket = 'avatars') => {
+  if (!file) return null;
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Please select a valid image file (JPEG, PNG, WEBP).');
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('Image size must be under 2MB.');
+  }
+
+  try {
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+    const filePath = `photos/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, { upsert: true });
+
+    if (!uploadError) {
+      const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      if (data?.publicUrl) return data.publicUrl;
+    }
+  } catch (err) {
+    console.warn("[Storage] Bucket upload warning, using resilient fallback:", err);
+  }
+
+  // Resilient fallback to Base64 Data URL
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
 export const database = {
   // ── USERS ──────────────────────────────────────────────────
   users: {
@@ -249,13 +285,14 @@ export const database = {
         ...s,
         full_name: s.users?.full_name || '',
         phone: s.users?.phone || '',
+        photo_url: s.photo_url || s.users?.photo_url || '',
         section_name: s.sections?.name || '',
         section_program: s.sections?.program || ''
       }));
     },
 
     create: async (studentPayload) => {
-      const { full_name, phone, class_name, roll_number, father_name, address, section_id } = studentPayload;
+      const { full_name, phone, class_name, roll_number, father_name, address, section_id, photo_url } = studentPayload;
 
       // 1. Create user row
       const newUserId = uuidv4();
@@ -272,16 +309,19 @@ export const database = {
       if (userErr) return { success: false, error: userErr.message };
 
       // 2. Create student row — rollback user on failure
+      const insertObj = {
+        user_id: newUserId,
+        class: class_name,
+        roll_number,
+        father_name,
+        address,
+        section_id: section_id || null
+      };
+      if (photo_url) insertObj.photo_url = photo_url;
+
       const { data: studentRecord, error: studErr } = await supabase
         .from('students')
-        .insert({
-          user_id: newUserId,
-          class: class_name,
-          roll_number,
-          father_name,
-          address,
-          section_id: section_id || null
-        })
+        .insert(insertObj)
         .select();
 
       if (studErr) {
@@ -292,7 +332,7 @@ export const database = {
     },
 
     update: async (id, studentPayload) => {
-      const { full_name, phone, class_name, roll_number, father_name, address, user_id, section_id } = studentPayload;
+      const { full_name, phone, class_name, roll_number, father_name, address, user_id, section_id, photo_url } = studentPayload;
 
       const { error: userErr } = await supabase
         .from('users')
@@ -300,9 +340,12 @@ export const database = {
         .eq('id', user_id);
       if (userErr) return { success: false, error: userErr.message };
 
+      const updateObj = { class: class_name, roll_number, father_name, address, section_id: section_id || null };
+      if (photo_url !== undefined) updateObj.photo_url = photo_url;
+
       const { data, error: studErr } = await supabase
         .from('students')
-        .update({ class: class_name, roll_number, father_name, address, section_id: section_id || null })
+        .update(updateObj)
         .eq('id', id)
         .select();
 
@@ -339,12 +382,13 @@ export const database = {
       return data.map(t => ({
         ...t,
         full_name: t.users?.full_name || '',
-        phone: t.users?.phone || ''
+        phone: t.users?.phone || '',
+        photo_url: t.photo_url || t.users?.photo_url || ''
       }));
     },
 
     create: async (teacherPayload) => {
-      const { full_name, phone, subject, qualification, salary, joining_date, user_id } = teacherPayload;
+      const { full_name, phone, subject, qualification, salary, joining_date, user_id, photo_url } = teacherPayload;
 
       const newUserId = user_id || uuidv4();
       const { error: userErr } = await supabase
@@ -357,15 +401,18 @@ export const database = {
         });
       if (userErr) return { success: false, error: userErr.message };
 
+      const insertObj = {
+        user_id: newUserId,
+        subject,
+        qualification,
+        salary: Number(salary),
+        joining_date
+      };
+      if (photo_url) insertObj.photo_url = photo_url;
+
       const { data, error: teaErr } = await supabase
         .from('teachers')
-        .insert({
-          user_id: newUserId,
-          subject,
-          qualification,
-          salary: Number(salary),
-          joining_date
-        })
+        .insert(insertObj)
         .select();
 
       if (teaErr) {
@@ -376,7 +423,7 @@ export const database = {
     },
 
     update: async (id, teacherPayload) => {
-      const { full_name, phone, subject, qualification, salary, joining_date, user_id } = teacherPayload;
+      const { full_name, phone, subject, qualification, salary, joining_date, user_id, photo_url } = teacherPayload;
 
       const { error: userErr } = await supabase
         .from('users')
@@ -384,9 +431,12 @@ export const database = {
         .eq('id', user_id);
       if (userErr) return { success: false, error: userErr.message };
 
+      const updateObj = { subject, qualification, salary: Number(salary), joining_date };
+      if (photo_url !== undefined) updateObj.photo_url = photo_url;
+
       const { data, error: teaErr } = await supabase
         .from('teachers')
-        .update({ subject, qualification, salary: Number(salary), joining_date })
+        .update(updateObj)
         .eq('id', id)
         .select();
 
