@@ -4,6 +4,7 @@ import { FileText, PlusCircle, Trash2, Calendar, AlertTriangle, BellRing, Edit3,
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
+import Select from './ui/Select';
 
 
 export default function CMSModule({ userRole }) {

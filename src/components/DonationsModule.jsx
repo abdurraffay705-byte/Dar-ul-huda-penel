@@ -4,6 +4,7 @@ import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, Shiel
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
+import Select from './ui/Select';
 
 
 export default function DonationsModule({ userRole }) {

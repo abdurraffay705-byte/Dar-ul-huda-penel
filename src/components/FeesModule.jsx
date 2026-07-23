@@ -5,6 +5,7 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import logoImg from '../assets/logo.jpg';
+import Select from './ui/Select';
 
 
 export default function FeesModule({ userRole }) {
