@@ -243,19 +243,19 @@ export default function CMSModule({ userRole }) {
                     <>
                       <button
                         onClick={() => handleOpenEdit(n)}
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Edit Notice"
+                        className="action-btn-icon action-edit"
+                        data-tooltip="Edit Notice"
+                        aria-label="Edit Notice"
                       >
-                        <Edit3 size={14} /> Edit
+                        <Edit3 size={15} />
                       </button>
                       <button
                         onClick={() => handleDelete(n.id)}
-                        className="btn-danger"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Delete Announcement"
+                        className="action-btn-icon action-delete"
+                        data-tooltip="Delete Announcement"
+                        aria-label="Delete Announcement"
                       >
-                        <Trash2 size={14} /> Delete
+                        <Trash2 size={15} />
                       </button>
                     </>
                   )}

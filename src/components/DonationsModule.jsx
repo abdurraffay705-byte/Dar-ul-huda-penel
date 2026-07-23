@@ -279,19 +279,19 @@ export default function DonationsModule({ userRole }) {
                 <>
                   <button
                     onClick={() => handleOpenEditForm(donation)}
-                    className="btn-secondary"
-                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                    title="Edit Details"
+                    className="action-btn-icon action-edit"
+                    data-tooltip="Edit Details"
+                    aria-label="Edit Details"
                   >
-                    <Edit3 size={14} /> Edit
+                    <Edit3 size={15} />
                   </button>
                   <button
                     onClick={() => handleDelete(donation.id)}
-                    className="btn-danger"
-                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                    title="Delete"
+                    className="action-btn-icon action-delete"
+                    data-tooltip="Delete Donation"
+                    aria-label="Delete Donation"
                   >
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={15} />
                   </button>
                 </>
               )}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3, ChevronDown, Calendar, GraduationCap, Loader2 } from 'lucide-react';
+import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3, ChevronDown, Calendar, GraduationCap, Loader2, DollarSign } from 'lucide-react';
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
@@ -416,50 +416,51 @@ const handlePrint = () => {
               {canAdd && fee.status === 'unpaid' && (
                 <button
                   onClick={() => handleOpenPaymentModal(fee)}
-                  className="btn-primary"
-                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                  className="action-btn-icon action-success"
+                  data-tooltip="Record Payment"
+                  aria-label="Record Payment"
                 >
-                  Post Cash
+                  <DollarSign size={15} />
                 </button>
               )}
               {fee.total_paid > 0 && (
                 <button
                   onClick={() => handleOpenReceipt(fee)}
-                  className="btn-secondary"
-                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                  title="Print Receipt"
+                  className="action-btn-icon action-print"
+                  data-tooltip="Print Receipt"
+                  aria-label="Print Receipt"
                 >
-                  <Printer size={14} /> Receipt
+                  <Printer size={15} />
                 </button>
               )}
               {fee.status === 'unpaid' && (
                 <button
                   onClick={() => handleMarkPaid(fee.id)}
-                  className="btn-secondary"
-                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#ceead6' }}
-                  title="Mark Paid"
+                  className="action-btn-icon action-success"
+                  data-tooltip="Mark Paid"
+                  aria-label="Mark Paid"
                 >
-                  <Check size={14} /> Paid
+                  <Check size={15} />
                 </button>
               )}
               {canAdd && (
                 <button
                   onClick={() => handleOpenEditInvoiceModal(fee)}
-                  className="btn-secondary"
-                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                  title="Edit Invoice"
+                  className="action-btn-icon action-edit"
+                  data-tooltip="Edit Invoice"
+                  aria-label="Edit Invoice"
                 >
-                  <Edit3 size={14} />
+                  <Edit3 size={15} />
                 </button>
               )}
               {isEditable && (
                 <button
                   onClick={() => handleDeleteInvoice(fee.id)}
-                  className="btn-danger"
-                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                  title="Delete Invoice"
+                  className="action-btn-icon action-delete"
+                  data-tooltip="Delete Invoice"
+                  aria-label="Delete Invoice"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={15} />
                 </button>
               )}
             </>

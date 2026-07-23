@@ -355,30 +355,30 @@ export default function StudentsModule({ userRole, user }) {
               <>
                 <button
                   onClick={() => handleViewDetails(student)}
-                  className="btn-secondary"
-                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                  title="View Details"
+                  className="action-btn-icon action-view"
+                  data-tooltip="View Profile"
+                  aria-label="View Profile"
                 >
-                  <Eye size={14} /> Profile
+                  <Eye size={15} />
                 </button>
                 {canEditStudent(student) && (
                   <button
                     onClick={() => handleOpenEditForm(student)}
-                    className="btn-secondary"
-                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                    title="Edit Details"
+                    className="action-btn-icon action-edit"
+                    data-tooltip="Edit Details"
+                    aria-label="Edit Details"
                   >
-                    <Edit3 size={14} /> Edit
+                    <Edit3 size={15} />
                   </button>
                 )}
                 {canDeleteStudent() && (
                   <button
                     onClick={() => handleDelete(student.id)}
-                    className="btn-danger"
-                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                    title="Delete"
+                    className="action-btn-icon action-delete"
+                    data-tooltip="Delete Student"
+                    aria-label="Delete Student"
                   >
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={15} />
                   </button>
                 )}
               </>

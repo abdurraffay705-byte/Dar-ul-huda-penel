@@ -281,19 +281,19 @@ export default function UsersModule({ userRole }) {
                 <>
                   <button
                     onClick={() => handleOpenEditForm(u)}
-                    className="btn-secondary"
-                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                    title="Edit Details"
+                    className="action-btn-icon action-edit"
+                    data-tooltip="Edit Details"
+                    aria-label="Edit Details"
                   >
-                    <Edit3 size={14} /> Edit
+                    <Edit3 size={15} />
                   </button>
                   <button
                     onClick={() => handleDelete(u.id)}
-                    className="btn-danger"
-                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                    title="Remove"
+                    className="action-btn-icon action-delete"
+                    data-tooltip="Remove User"
+                    aria-label="Remove User"
                   >
-                    <Trash2 size={14} /> Remove
+                    <Trash2 size={15} />
                   </button>
                 </>
               )}

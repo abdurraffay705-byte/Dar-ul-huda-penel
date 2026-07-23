@@ -201,19 +201,19 @@ export default function SectionsModule({ userRole }) {
                     <>
                       <button
                         onClick={() => handleOpenEditForm(sec)}
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Edit Section"
+                        className="action-btn-icon action-edit"
+                        data-tooltip="Edit Section"
+                        aria-label="Edit Section"
                       >
-                        <Edit3 size={14} /> Edit
+                        <Edit3 size={15} />
                       </button>
                       <button
                         onClick={() => handleDelete(sec.id)}
-                        className="btn-danger"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Delete Section"
+                        className="action-btn-icon action-delete"
+                        data-tooltip="Delete Section"
+                        aria-label="Delete Section"
                       >
-                        <Trash2 size={14} /> Delete
+                        <Trash2 size={15} />
                       </button>
                     </>
                   )}
