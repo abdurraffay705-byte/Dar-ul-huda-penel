@@ -5,7 +5,6 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import Badge from './Badge';
-import Select from './ui/Select';
 
 
 
@@ -40,12 +39,12 @@ export default function StudentsModule({ userRole, user }) {
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Modals & Active student state
   const [activeStudent, setActiveStudent] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
-  
+
   // Fee & Attendance state for selected student profile
   const [studentFees, setStudentFees] = useState([]);
   const [studentAttendance, setStudentAttendance] = useState([]);
@@ -241,7 +240,7 @@ export default function StudentsModule({ userRole, user }) {
     if (normRole === 'data_entry') return true;
     if (normRole === 'teacher') {
       return teacherSubject && (
-        student.class.toLowerCase().includes(teacherSubject.toLowerCase()) || 
+        student.class.toLowerCase().includes(teacherSubject.toLowerCase()) ||
         teacherSubject.toLowerCase().includes(student.class.toLowerCase())
       );
     }
@@ -258,226 +257,227 @@ export default function StudentsModule({ userRole, user }) {
     <>
       {!isFormOpen && (
         <div className="fade-in" style={styles.container}>
-      <h1 className="section-title">Students Roster</h1>
-      
-      {/* FILTER ACTION BAR */}
-      <div className={`glass-panel filter-bar ${!loading && filteredStudents.length === 0 ? 'configBarExpanded' : ''}`}>
-        <div className="filter-bar__search">
-          <Search size={18} color="var(--color-text-muted)" />
-          <input autoComplete="off"
-            type="text"
-            placeholder="Search by student name, roll number, father..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input-shared"
-          />
-        </div>
-        
-        <div className="filter-bar__controls">
-          <Select
-            items={[
-              { value: '', label: 'All Classes' },
-              { value: 'Grade 1', label: 'Grade 1' },
-              { value: 'Grade 2', label: 'Grade 2' },
-              { value: 'Grade 3', label: 'Grade 3' },
-              { value: 'Grade 4', label: 'Grade 4' },
-              { value: 'Grade 5', label: 'Grade 5' },
-              { value: 'Hifz', label: 'Hifz' },
-              { value: 'Nazra', label: 'Nazra' }
-            ]}
-            value={classFilter}
-            onChange={setClassFilter}
-            placeholder="Select class"
-          />
+          <h1 className="section-title">Students Roster</h1>
 
-          {isEditable && (
-            <button onClick={handleOpenCreateForm} className="btn-primary-action">
-              <UserPlus size={16} /> Admit Student
-            </button>
-          )}
-        </div>
-      </div>
+          {/* FILTER ACTION BAR */}
+          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredStudents.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div style={styles.searchBox} className="filter-bar__search">
+              <input autoComplete="off"
+                type="text"
+                placeholder="Search by student name, roll number, father..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
 
-      {/* DUAL WORKSPACE SPLIT */}
-      {loading ? (
-        <LoadingSpinner message="Loading student rosters..." />
-      ) : filteredStudents.length === 0 ? (
-        <EmptyState
-          icon={students.length === 0 ? GraduationCap : Search}
-          title={students.length === 0 ? "No students registered" : "No matching students found"}
-          message={students.length === 0 ? "Admit a new student to build the roster." : "Try clearing filters or adjusting your search query."}
-        />
-      ) : (
-      <div style={styles.workspace}>
-        {/* ROSTER DATA TABLE */}
-        <div style={{ ...styles.tableArea, width: activeStudent ? '60%' : '100%' }}>
-          <DataTable
-            columns={[
-              {
-                key: 'full_name',
-                header: 'Student Name',
-                type: 'avatar',
-                subtextKey: 'roll_number',
-                sortable: true
-              },
-              {
-                key: 'class',
-                header: 'Class / Section',
-                sortable: true,
-                render: (student) => (
-                  <div>
-                    <Badge label={student.class} type="student" />
-                    {student.section_name && (
-                      <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block', marginTop: 2 }}>
-                        {student.section_name} ({student.section_program || ''})
-                      </span>
-                    )}
-                  </div>
-                )
-              },
-              {
-                key: 'phone',
-                header: 'Guardian Contact',
-                sortable: true,
-                render: (student) => (
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{student.phone || '-'}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Father: {student.father_name}</div>
-                  </div>
-                )
-              }
-            ]}
-            data={filteredStudents}
-            emptyIcon={GraduationCap}
-            emptyTitle={students.length === 0 ? "No students registered" : "No matching students found"}
-            emptyMessage={students.length === 0 ? "Admit a new student to build the roster." : "Try clearing filters or adjusting your search query."}
-            renderActions={(student) => (
-              <>
-                <button
-                  onClick={() => handleViewDetails(student)}
-                  className="action-btn-icon action-view"
-                  data-tooltip="View Profile"
-                  aria-label="View Profile"
+            <div style={styles.filtersGroup} className="filter-bar__controls">
+              <div className="select-wrapper" style={{ width: 'auto' }}>
+                <select
+                  value={classFilter}
+                  onChange={(e) => setClassFilter(e.target.value)}
+                  style={styles.filterSelect}
                 >
-                  <Eye size={15} />
+                  <option value="">All Classes</option>
+                  <option value="Grade 1">Grade 1</option>
+                  <option value="Grade 2">Grade 2</option>
+                  <option value="Grade 3">Grade 3</option>
+                  <option value="Grade 4">Grade 4</option>
+                  <option value="Grade 5">Grade 5</option>
+                  <option value="Hifz">Hifz</option>
+                  <option value="Nazra">Nazra</option>
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
+              </div>
+
+              {isEditable && (
+                <button onClick={handleOpenCreateForm} className="btn-primary">
+                  <UserPlus size={16} /> Admit Student
                 </button>
-                {canEditStudent(student) && (
-                  <button
-                    onClick={() => handleOpenEditForm(student)}
-                    className="action-btn-icon action-edit"
-                    data-tooltip="Edit Details"
-                    aria-label="Edit Details"
-                  >
-                    <Edit3 size={15} />
-                  </button>
-                )}
-                {canDeleteStudent() && (
-                  <button
-                    onClick={() => handleDelete(student.id)}
-                    className="action-btn-icon action-delete"
-                    data-tooltip="Delete Student"
-                    aria-label="Delete Student"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                )}
-              </>
-            )}
-          />
-        </div>
-
-        {/* DETAILED STUDENT WORKSPACE PROFILE */}
-        {activeStudent && (
-          <div className="glass-panel fade-in" style={styles.profileArea}>
-            <div style={styles.profileHeader}>
-              <h3 style={styles.profileTitle}>Student Profile Details</h3>
-              <button onClick={() => setActiveStudent(null)} style={styles.closeBtn} className="btn-icon-only">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={styles.profileCard}>
-              <div style={styles.profileAvatar}>
-                {activeStudent.full_name.charAt(0)}
-              </div>
-              <h4 style={styles.profileName}>{activeStudent.full_name}</h4>
-              <Badge label="Active Student" type="success" />
-            </div>
-
-            <div style={styles.detailsGrid}>
-              <div style={styles.detailItem}>
-                <span style={styles.detailLabel}>Roll Number</span>
-                <span style={styles.detailVal}>{activeStudent.roll_number}</span>
-              </div>
-              <div style={styles.detailItem}>
-                <span style={styles.detailLabel}>Class Assigned</span>
-                <span style={styles.detailVal}>{activeStudent.class}</span>
-              </div>
-              <div style={styles.detailItem}>
-                <span style={styles.detailLabel}>Assigned Section</span>
-                <span style={styles.detailVal}>{activeStudent.section_name ? `${activeStudent.section_name} (${activeStudent.section_program || ''})` : 'Unassigned'}</span>
-              </div>
-              <div style={styles.detailItem}>
-                <span style={styles.detailLabel}>Father's Name</span>
-                <span style={styles.detailVal}>{activeStudent.father_name}</span>
-              </div>
-              <div style={styles.detailItem}>
-                <span style={styles.detailLabel}>Phone Contact</span>
-                <span style={styles.detailVal}>{activeStudent.phone || 'Not Specified'}</span>
-              </div>
-            </div>
-
-            <hr style={styles.divider} />
-
-            <div style={styles.parentBox}>
-              <div style={styles.parentRow}>
-                <span style={styles.parentLabel}>Address:</span>
-                <span style={styles.parentVal}>{activeStudent.address || 'Not Specified'}</span>
-              </div>
-            </div>
-
-            <hr style={styles.divider} />
-
-            {/* AUXILIARY HISTORIES */}
-            <h4 style={styles.subHeading}>Billing Invoices</h4>
-            <div style={styles.auxList}>
-              {studentFees.length === 0 ? (
-                <p style={styles.auxEmpty}>No fee invoices logged.</p>
-              ) : (
-                studentFees.map(f => (
-                  <div key={f.id} style={styles.auxItem}>
-                    <div>
-                      <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>Due Date: {f.due_date}</span>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-primary)' }}>PKR {Number(f.amount).toLocaleString()}</span>
-                      <div>
-                        <Badge label={f.status} type={f.status} />
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <h4 style={styles.subHeading}>Recent Attendance Log</h4>
-            <div style={styles.auxList}>
-              {studentAttendance.length === 0 ? (
-                <p style={styles.auxEmpty}>No attendance logged yet.</p>
-              ) : (
-                studentAttendance.slice(0, 5).map(a => (
-                  <div key={a.id} style={styles.auxItem}>
-                    <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{a.date}</span>
-                    <Badge label={a.status} type={a.status} />
-                  </div>
-                ))
               )}
             </div>
           </div>
-        )}
-      </div>
-      )}
-      </div>
+
+          {/* DUAL WORKSPACE SPLIT */}
+          {loading ? (
+            <LoadingSpinner message="Loading student rosters..." />
+          ) : filteredStudents.length === 0 ? (
+            <EmptyState
+              icon={students.length === 0 ? GraduationCap : Search}
+              title={students.length === 0 ? "No students registered" : "No matching students found"}
+              message={students.length === 0 ? "Admit a new student to build the roster." : "Try clearing filters or adjusting your search query."}
+            />
+          ) : (
+            <div style={styles.workspace}>
+              {/* ROSTER DATA TABLE */}
+              <div style={{ ...styles.tableArea, width: activeStudent ? '60%' : '100%' }}>
+                <DataTable
+                  columns={[
+                    {
+                      key: 'full_name',
+                      header: 'Student Name',
+                      type: 'avatar',
+                      subtextKey: 'roll_number',
+                      sortable: true
+                    },
+                    {
+                      key: 'class',
+                      header: 'Class / Section',
+                      sortable: true,
+                      render: (student) => (
+                        <div>
+                          <Badge label={student.class} type="student" />
+                          {student.section_name && (
+                            <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block', marginTop: 2 }}>
+                              {student.section_name} ({student.section_program || ''})
+                            </span>
+                          )}
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'phone',
+                      header: 'Guardian Contact',
+                      sortable: true,
+                      render: (student) => (
+                        <div>
+                          <div style={{ fontWeight: 500 }}>{student.phone || '-'}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Father: {student.father_name}</div>
+                        </div>
+                      )
+                    }
+                  ]}
+                  data={filteredStudents}
+                  emptyIcon={GraduationCap}
+                  emptyTitle={students.length === 0 ? "No students registered" : "No matching students found"}
+                  emptyMessage={students.length === 0 ? "Admit a new student to build the roster." : "Try clearing filters or adjusting your search query."}
+                  renderActions={(student) => (
+                    <>
+                      <button
+                        onClick={() => handleViewDetails(student)}
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="View Details"
+                      >
+                        <Eye size={14} /> Profile
+                      </button>
+                      {canEditStudent(student) && (
+                        <button
+                          onClick={() => handleOpenEditForm(student)}
+                          className="btn-secondary"
+                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                          title="Edit Details"
+                        >
+                          <Edit3 size={14} /> Edit
+                        </button>
+                      )}
+                      {canDeleteStudent() && (
+                        <button
+                          onClick={() => handleDelete(student.id)}
+                          className="btn-danger"
+                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                          title="Delete"
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              {/* DETAILED STUDENT WORKSPACE PROFILE */}
+              {activeStudent && (
+                <div className="glass-panel fade-in" style={styles.profileArea}>
+                  <div style={styles.profileHeader}>
+                    <h3 style={styles.profileTitle}>Student Profile Details</h3>
+                    <button onClick={() => setActiveStudent(null)} style={styles.closeBtn} className="btn-icon-only">
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div style={styles.profileCard}>
+                    <div style={styles.profileAvatar}>
+                      {activeStudent.full_name.charAt(0)}
+                    </div>
+                    <h4 style={styles.profileName}>{activeStudent.full_name}</h4>
+                    <Badge label="Active Student" type="success" />
+                  </div>
+
+                  <div style={styles.detailsGrid}>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Roll Number</span>
+                      <span style={styles.detailVal}>{activeStudent.roll_number}</span>
+                    </div>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Class Assigned</span>
+                      <span style={styles.detailVal}>{activeStudent.class}</span>
+                    </div>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Assigned Section</span>
+                      <span style={styles.detailVal}>{activeStudent.section_name ? `${activeStudent.section_name} (${activeStudent.section_program || ''})` : 'Unassigned'}</span>
+                    </div>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Father's Name</span>
+                      <span style={styles.detailVal}>{activeStudent.father_name}</span>
+                    </div>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Phone Contact</span>
+                      <span style={styles.detailVal}>{activeStudent.phone || 'Not Specified'}</span>
+                    </div>
+                  </div>
+
+                  <hr style={styles.divider} />
+
+                  <div style={styles.parentBox}>
+                    <div style={styles.parentRow}>
+                      <span style={styles.parentLabel}>Address:</span>
+                      <span style={styles.parentVal}>{activeStudent.address || 'Not Specified'}</span>
+                    </div>
+                  </div>
+
+                  <hr style={styles.divider} />
+
+                  {/* AUXILIARY HISTORIES */}
+                  <h4 style={styles.subHeading}>Billing Invoices</h4>
+                  <div style={styles.auxList}>
+                    {studentFees.length === 0 ? (
+                      <p style={styles.auxEmpty}>No fee invoices logged.</p>
+                    ) : (
+                      studentFees.map(f => (
+                        <div key={f.id} style={styles.auxItem}>
+                          <div>
+                            <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>Due Date: {f.due_date}</span>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-primary)' }}>PKR {Number(f.amount).toLocaleString()}</span>
+                            <div>
+                              <Badge label={f.status} type={f.status} />
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <h4 style={styles.subHeading}>Recent Attendance Log</h4>
+                  <div style={styles.auxList}>
+                    {studentAttendance.length === 0 ? (
+                      <p style={styles.auxEmpty}>No attendance logged yet.</p>
+                    ) : (
+                      studentAttendance.slice(0, 5).map(a => (
+                        <div key={a.id} style={styles.auxItem}>
+                          <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{a.date}</span>
+                          <Badge label={a.status} type={a.status} />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ADMIT / EDIT STUDENT FORM */}
@@ -490,7 +490,7 @@ export default function StudentsModule({ userRole, user }) {
                 <X size={18} />
               </button>
             </div>
-            
+
             <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
               {/* PHOTO UPLOAD & PREVIEW */}
               <div className="photo-upload-container">

@@ -5,7 +5,6 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import Badge from './Badge';
-import Select from './ui/Select';
 
 export default function TeachersModule({ userRole }) {
   const [teachers, setTeachers] = useState([]);
@@ -17,7 +16,7 @@ export default function TeachersModule({ userRole }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Photo Upload State
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -36,7 +35,7 @@ export default function TeachersModule({ userRole }) {
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
   };
-  
+
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -198,120 +197,120 @@ export default function TeachersModule({ userRole }) {
     <>
       {!isFormOpen && (
         <div className="fade-in" style={styles.container}>
-      <h1 className="section-title">Instructors Registry</h1>
+          <h1 className="section-title">Instructors Registry</h1>
 
-      {/* FILTER ACTION BAR */}
-      <div className={`glass-panel filter-bar ${!loading && filteredTeachers.length === 0 ? 'configBarExpanded' : ''}`}>
-        <div className="filter-bar__search">
-          <Search size={18} color="var(--color-text-muted)" />
-          <input autoComplete="off"
-            type="text"
-            placeholder="Search by instructor name, subject..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input-shared"
-          />
-        </div>
+          {/* FILTER ACTION BAR */}
+          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredTeachers.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div style={styles.searchBox} className="filter-bar__search">
+              <Search size={18} color="var(--color-text-muted)" />
+              <input autoComplete="off"
+                type="text"
+                placeholder="Search by instructor name, subject..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
 
-        <div className="filter-bar__controls">
-            <Select
-              items={[
-                { value: '', label: 'All Subjects' },
-                { value: 'Hifz Instruction', label: 'Hifz Instruction' },
-                { value: 'Tajweed & Qiraat', label: 'Tajweed & Qiraat' },
-                { value: 'Islamic Studies', label: 'Islamic Studies' },
-                { value: 'Arabic Language', label: 'Arabic Language' },
-                { value: 'Primary Sciences', label: 'Primary Sciences' }
-              ]}
-              value={subjectFilter}
-              onChange={setSubjectFilter}
-              placeholder="Select subject"
+            <div style={styles.filtersGroup} className="filter-bar__controls">
+              <Select
+                items={[
+                  { value: '', label: 'All Subjects' },
+                  { value: 'Hifz Instruction', label: 'Hifz Instruction' },
+                  { value: 'Tajweed & Qiraat', label: 'Tajweed & Qiraat' },
+                  { value: 'Islamic Studies', label: 'Islamic Studies' },
+                  { value: 'Arabic Language', label: 'Arabic Language' },
+                  { value: 'Primary Sciences', label: 'Primary Sciences' }
+                ]}
+                value={subjectFilter}
+                onChange={setSubjectFilter}
+                placeholder="Select subject"
+              />
+
+              {canAdd && (
+                <button onClick={handleOpenCreateForm} className="btn-primary">
+                  <UserPlus size={16} /> Appoint Instructor
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* TEACHERS DATA TABLE */}
+          {loading ? (
+            <LoadingSpinner message="Loading instructor registry..." />
+          ) : filteredTeachers.length === 0 ? (
+            <EmptyState
+              icon={teachers.length === 0 ? Award : Search}
+              title={teachers.length === 0 ? "No instructors registered" : "No matching instructors found"}
+              message={teachers.length === 0 ? "Appoint a new teacher to build the registry." : "Try clearing filters or adjusting your search query."}
             />
-
-          {canAdd && (
-            <button onClick={handleOpenCreateForm} className="btn-primary-action">
-              <UserPlus size={16} /> Appoint Instructor
-            </button>
+          ) : (
+            <DataTable
+              columns={[
+                {
+                  key: 'full_name',
+                  header: 'Instructor Name',
+                  type: 'avatar',
+                  sortable: true
+                },
+                {
+                  key: 'subject',
+                  header: 'Subject / Role',
+                  sortable: true,
+                  render: (teacher) => (
+                    <div>
+                      <Badge label={teacher.subject} type="teacher" />
+                      {teacher.qualification && (
+                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block', marginTop: 2 }}>
+                          {teacher.qualification}
+                        </span>
+                      )}
+                    </div>
+                  )
+                },
+                {
+                  key: 'phone',
+                  header: 'Contact Phone',
+                  sortable: true,
+                  render: (teacher) => (
+                    <div>
+                      <div>{teacher.phone || '-'}</div>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Joined: {teacher.joining_date}</span>
+                    </div>
+                  )
+                }
+              ]}
+              data={filteredTeachers}
+              emptyIcon={Award}
+              emptyTitle="No instructors found"
+              emptyMessage="No matching instructors found."
+              renderActions={(teacher) => (
+                <>
+                  {(isEditable || norm === 'data_entry') && (
+                    <button
+                      onClick={() => handleOpenEditForm(teacher)}
+                      className="btn-secondary"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                      title="Edit Details"
+                    >
+                      <Edit3 size={14} /> Edit
+                    </button>
+                  )}
+                  {isEditable && (
+                    <button
+                      onClick={() => handleDelete(teacher.id)}
+                      className="btn-danger"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                      title="Delete"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
+                </>
+              )}
+            />
           )}
         </div>
-      </div>
-
-      {/* TEACHERS DATA TABLE */}
-      {loading ? (
-        <LoadingSpinner message="Loading instructor registry..." />
-      ) : filteredTeachers.length === 0 ? (
-        <EmptyState
-          icon={teachers.length === 0 ? Award : Search}
-          title={teachers.length === 0 ? "No instructors registered" : "No matching instructors found"}
-          message={teachers.length === 0 ? "Appoint a new teacher to build the registry." : "Try clearing filters or adjusting your search query."}
-        />
-      ) : (
-        <DataTable
-          columns={[
-            {
-              key: 'full_name',
-              header: 'Instructor Name',
-              type: 'avatar',
-              sortable: true
-            },
-            {
-              key: 'subject',
-              header: 'Subject / Role',
-              sortable: true,
-              render: (teacher) => (
-                <div>
-                  <Badge label={teacher.subject} type="teacher" />
-                  {teacher.qualification && (
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block', marginTop: 2 }}>
-                      {teacher.qualification}
-                    </span>
-                  )}
-                </div>
-              )
-            },
-            {
-              key: 'phone',
-              header: 'Contact Phone',
-              sortable: true,
-              render: (teacher) => (
-                <div>
-                  <div>{teacher.phone || '-'}</div>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Joined: {teacher.joining_date}</span>
-                </div>
-              )
-            }
-          ]}
-          data={filteredTeachers}
-          emptyIcon={Award}
-          emptyTitle="No instructors found"
-          emptyMessage="No matching instructors found."
-          renderActions={(teacher) => (
-            <>
-              {(isEditable || norm === 'data_entry') && (
-                <button
-                  onClick={() => handleOpenEditForm(teacher)}
-                  className="action-btn-icon action-edit"
-                  data-tooltip="Edit Details"
-                  aria-label="Edit Details"
-                >
-                  <Edit3 size={15} />
-                </button>
-              )}
-              {isEditable && (
-                <button
-                  onClick={() => handleDelete(teacher.id)}
-                  className="action-btn-icon action-delete"
-                  data-tooltip="Delete Instructor"
-                  aria-label="Delete Instructor"
-                >
-                  <Trash2 size={15} />
-                </button>
-              )}
-            </>
-          )}
-        />
-      )}
-      </div>
       )}
 
       {/* APPOINT / EDIT TEACHER MODAL */}

@@ -4,7 +4,6 @@ import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, Shiel
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
-import Select from './ui/Select';
 
 
 export default function DonationsModule({ userRole }) {
@@ -12,7 +11,7 @@ export default function DonationsModule({ userRole }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
-  
+
   // Modals & Forms
   const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [editingDonation, setEditingDonation] = useState(null);
@@ -143,163 +142,165 @@ export default function DonationsModule({ userRole }) {
     <>
       {!isRecordOpen && (
         <div className="fade-in">
-      <h1 className="section-title">Donation Funds</h1>
+          <h1 className="section-title">Donation Funds</h1>
 
-      {/* CHARITY OVERVIEW CARD */}
-      <div style={styles.charityHeader} className="glass-panel">
-        <div>
-          <span style={styles.charityLabel}>TOTAL DONATION CAPITAL RECEIVED</span>
-          <h2 style={styles.charityValue}>PKR {totalCharity.toLocaleString()}</h2>
-          <span style={{ fontSize: '0.8rem', color: 'var(--color-primary-light)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <ShieldCheck size={14} /> 100% Audited Sadaqah & Zakat Ledgers
-          </span>
-        </div>
-        {canAddDonation && (
-          <button onClick={() => handleOpenRecord('General Sadqah Fund')} className="btn-accent">
-            <PlusCircle size={18} /> Record New Donation
-          </button>
-        )}
-      </div>
+          {/* CHARITY OVERVIEW CARD */}
+          <div style={styles.charityHeader} className="glass-panel">
+            <div>
+              <span style={styles.charityLabel}>TOTAL DONATION CAPITAL RECEIVED</span>
+              <h2 style={styles.charityValue}>PKR {totalCharity.toLocaleString()}</h2>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-primary-light)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <ShieldCheck size={14} /> 100% Audited Sadaqah & Zakat Ledgers
+              </span>
+            </div>
+            {canAddDonation && (
+              <button onClick={() => handleOpenRecord('General Sadqah Fund')} className="btn-accent">
+                <PlusCircle size={18} /> Record New Donation
+              </button>
+            )}
+          </div>
 
-      {/* CAMPAIGN VISUAL GAUGES */}
-      <h3 style={styles.subHeading}><Target size={16} style={{ marginRight: 6 }} /> Active Development Campaigns</h3>
-      <div style={styles.campaignGrid}>
-        {campaigns.map((camp) => {
-          const raised = getCampaignSum(camp.key);
-          const pct = Math.min(Math.round((raised / camp.target) * 100), 100);
-          
-          return (
-            <div key={camp.key} className="glass-panel" style={styles.campaignCard}>
-              <h4 style={styles.campTitle}>{camp.label}</h4>
-              <p style={styles.campDesc}>{camp.desc}</p>
-              
-              <div style={styles.progressInfo}>
-                <span style={styles.progressLabel}>Raised: <strong>PKR {raised.toLocaleString()}</strong></span>
-                <span style={styles.progressLabel}>Target: <strong>PKR {camp.target.toLocaleString()}</strong></span>
-              </div>
+          {/* CAMPAIGN VISUAL GAUGES */}
+          <h3 style={styles.subHeading}><Target size={16} style={{ marginRight: 6 }} /> Active Development Campaigns</h3>
+          <div style={styles.campaignGrid}>
+            {campaigns.map((camp) => {
+              const raised = getCampaignSum(camp.key);
+              const pct = Math.min(Math.round((raised / camp.target) * 100), 100);
 
-              {/* visual gauge bar */}
-              <div style={styles.gaugeBarBackground}>
-                <div style={{
-                  ...styles.gaugeBarActive,
-                  width: `${pct}%`,
-                  backgroundColor: pct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'
-                }} />
-              </div>
+              return (
+                <div key={camp.key} className="glass-panel" style={styles.campaignCard}>
+                  <h4 style={styles.campTitle}>{camp.label}</h4>
+                  <p style={styles.campDesc}>{camp.desc}</p>
 
-              <div style={styles.campFooter}>
-                <span style={styles.pctBadge}>{pct}% Complete</span>
-                {canAddDonation && (
-                  <button onClick={() => handleOpenRecord(camp.key)} style={styles.campDonateBtn}>
-                    Log for this
-                  </button>
-                )}
+                  <div style={styles.progressInfo}>
+                    <span style={styles.progressLabel}>Raised: <strong>PKR {raised.toLocaleString()}</strong></span>
+                    <span style={styles.progressLabel}>Target: <strong>PKR {camp.target.toLocaleString()}</strong></span>
+                  </div>
+
+                  {/* visual gauge bar */}
+                  <div style={styles.gaugeBarBackground}>
+                    <div style={{
+                      ...styles.gaugeBarActive,
+                      width: `${pct}%`,
+                      backgroundColor: pct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'
+                    }} />
+                  </div>
+
+                  <div style={styles.campFooter}>
+                    <span style={styles.pctBadge}>{pct}% Complete</span>
+                    {canAddDonation && (
+                      <button onClick={() => handleOpenRecord(camp.key)} style={styles.campDonateBtn}>
+                        Log for this
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* DONOR REGISTRY LEDGER */}
+          <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
+
+          {/* SEARCH AND FILTERS */}
+          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div style={styles.searchBox} className="filter-bar__search">
+              <Search size={16} color="#64748b" />
+              <input autoComplete="off"
+                type="text"
+                placeholder="Search by donor name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
+
+            <div style={styles.filtersGroup} className="filter-bar__controls">
+              <div className="select-wrapper" style={{ width: 'auto' }}>
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  style={styles.filterSelect}
+                >
+                  <option value="">All Sources</option>
+                  <option value="General Sadqah Fund">General Sadqah Fund</option>
+                  <option value="Orphan Sponsorship">Orphan Sponsorship</option>
+                  <option value="Mosque Hall Extension">Mosque Hall Extension</option>
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
 
-      {/* DONOR REGISTRY LEDGER */}
-      <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
-
-      {/* SEARCH AND FILTERS */}
-      <div className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
-        <div className="filter-bar__search">
-          <Search size={16} color="var(--color-text-muted)" />
-          <input autoComplete="off"
-            type="text"
-            placeholder="Search by donor name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input-shared"
-          />
-        </div>
-
-        <div className="filter-bar__controls">
-          <Select
-            items={[
-              { value: '', label: 'All Sources' },
-              { value: 'General Sadqah Fund', label: 'General Sadqah Fund' },
-              { value: 'Orphan Sponsorship', label: 'Orphan Sponsorship' },
-              { value: 'Mosque Hall Extension', label: 'Mosque Hall Extension' }
-            ]}
-            value={sourceFilter}
-            onChange={setSourceFilter}
-            placeholder="Select source"
-          />
-        </div>
-      </div>
-
-      {/* DONOR DATA TABLE */}
-      {loading ? (
-        <LoadingSpinner message="Loading donation records..." />
-      ) : filteredDonations.length === 0 ? (
-        <EmptyState
-          icon={donations.length === 0 ? HeartHandshake : Search}
-          title={donations.length === 0 ? "No donations recorded" : "No matching donations found"}
-          message={donations.length === 0 ? "Record a new donation transaction to get started." : "Try clearing filters or adjusting your search query."}
-        />
-      ) : (
-        <DataTable
-          columns={[
-            {
-              key: 'donor_name',
-              header: 'Donor Name',
-              type: 'avatar',
-              subtextKey: 'source',
-              sortable: true
-            },
-            {
-              key: 'amount',
-              header: 'Donation Amount',
-              type: 'currency',
-              sortable: true
-            },
-            {
-              key: 'payment_mode',
-              header: 'Payment Mode',
-              type: 'badge',
-              sortable: true
-            },
-            {
-              key: 'created_at',
-              header: 'Receipt Date',
-              sortable: true,
-              render: (d) => (d.created_at ? d.created_at.substring(0, 10) : '-')
-            }
-          ]}
-          data={filteredDonations}
-          emptyIcon={HeartHandshake}
-          emptyTitle="No donations found"
-          emptyMessage="No matching donation transactions found."
-          renderActions={(donation) => (
-            <>
-              {isEditable && (
+          {/* DONOR DATA TABLE */}
+          {loading ? (
+            <LoadingSpinner message="Loading donation records..." />
+          ) : filteredDonations.length === 0 ? (
+            <EmptyState
+              icon={donations.length === 0 ? HeartHandshake : Search}
+              title={donations.length === 0 ? "No donations recorded" : "No matching donations found"}
+              message={donations.length === 0 ? "Record a new donation transaction to get started." : "Try clearing filters or adjusting your search query."}
+            />
+          ) : (
+            <DataTable
+              columns={[
+                {
+                  key: 'donor_name',
+                  header: 'Donor Name',
+                  type: 'avatar',
+                  subtextKey: 'source',
+                  sortable: true
+                },
+                {
+                  key: 'amount',
+                  header: 'Donation Amount',
+                  type: 'currency',
+                  sortable: true
+                },
+                {
+                  key: 'payment_mode',
+                  header: 'Payment Mode',
+                  type: 'badge',
+                  sortable: true
+                },
+                {
+                  key: 'created_at',
+                  header: 'Receipt Date',
+                  sortable: true,
+                  render: (d) => (d.created_at ? d.created_at.substring(0, 10) : '-')
+                }
+              ]}
+              data={filteredDonations}
+              emptyIcon={HeartHandshake}
+              emptyTitle="No donations found"
+              emptyMessage="No matching donation transactions found."
+              renderActions={(donation) => (
                 <>
-                  <button
-                    onClick={() => handleOpenEditForm(donation)}
-                    className="action-btn-icon action-edit"
-                    data-tooltip="Edit Details"
-                    aria-label="Edit Details"
-                  >
-                    <Edit3 size={15} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(donation.id)}
-                    className="action-btn-icon action-delete"
-                    data-tooltip="Delete Donation"
-                    aria-label="Delete Donation"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {isEditable && (
+                    <>
+                      <button
+                        onClick={() => handleOpenEditForm(donation)}
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Edit Details"
+                      >
+                        <Edit3 size={14} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(donation.id)}
+                        className="btn-danger"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </>
+                  )}
                 </>
               )}
-            </>
+            />
           )}
-        />
-      )}
-      </div>
+        </div>
       )}
 
       {/* NEW DONATION MODAL */}

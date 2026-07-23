@@ -5,7 +5,6 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import logoImg from '../assets/logo.jpg';
-import Select from './ui/Select';
 
 
 export default function FeesModule({ userRole }) {
@@ -22,7 +21,7 @@ export default function FeesModule({ userRole }) {
   const [activeInvoice, setActiveInvoice] = useState(null);
   const [paymentsHistory, setPaymentsHistory] = useState([]);
   const [editingFee, setEditingFee] = useState(null);
-  
+
   // Stats
   const [stats, setStats] = useState({ totalDue: 0, totalPaid: 0, totalPending: 0 });
 
@@ -48,18 +47,18 @@ export default function FeesModule({ userRole }) {
         database.fees.list(),
         database.students.list()
       ]);
-      
+
       setStudents(studentData);
 
       // We must calculate exact paid and outstanding metrics across all invoices
       let due = 0;
       let paid = 0;
-      
+
       const mappedFees = [];
       for (const fee of feeData) {
         const payments = await database.fees.paymentsList(fee.id);
         const sumPaid = payments.reduce((s, p) => s + Number(p.amount_paid), 0);
-        
+
         due += Number(fee.amount);
         paid += sumPaid;
 
@@ -217,65 +216,65 @@ export default function FeesModule({ userRole }) {
   };
 
   const handleOpenReceipt = (fee) => {
-  setActiveInvoice(fee);
-  setPaymentsHistory(fee.payments || []);
-};
+    setActiveInvoice(fee);
+    setPaymentsHistory(fee.payments || []);
+  };
 
-const handleMarkPaid = async (feeId) => {
-  const fee = fees.find(f => f.id === feeId);
-  if (!fee) return;
-  const remainingAmount = Number(fee.amount) - Number(fee.total_paid);
-  if (remainingAmount <= 0) {
-    const res = await database.fees.updateStatus(feeId, 'paid');
+  const handleMarkPaid = async (feeId) => {
+    const fee = fees.find(f => f.id === feeId);
+    if (!fee) return;
+    const remainingAmount = Number(fee.amount) - Number(fee.total_paid);
+    if (remainingAmount <= 0) {
+      const res = await database.fees.updateStatus(feeId, 'paid');
+      if (res.success) {
+        loadFeeData();
+      } else {
+        alert('Failed to mark as paid: ' + res.error);
+      }
+      return;
+    }
+
+    const res = await database.fees.recordPayment({
+      fee_id: feeId,
+      amount_paid: remainingAmount,
+      payment_mode: 'cash',
+      payment_date: new Date().toISOString().split('T')[0]
+    });
+
     if (res.success) {
       loadFeeData();
     } else {
-      alert('Failed to mark as paid: ' + res.error);
+      alert('Failed to mark as paid (payment record failed): ' + res.error);
     }
-    return;
-  }
+  };
 
-  const res = await database.fees.recordPayment({
-    fee_id: feeId,
-    amount_paid: remainingAmount,
-    payment_mode: 'cash',
-    payment_date: new Date().toISOString().split('T')[0]
-  });
-
-  if (res.success) {
-    loadFeeData();
-  } else {
-    alert('Failed to mark as paid (payment record failed): ' + res.error);
-  }
-};
-
-const handleDeleteInvoice = async (feeId) => {
-  if (!window.confirm('Are you sure you want to delete this invoice?')) {
-    return;
-  }
-
-  const res = await database.fees.delete(feeId);
-  if (res.success) {
-    if (activeInvoice?.id === feeId) {
-      setActiveInvoice(null);
+  const handleDeleteInvoice = async (feeId) => {
+    if (!window.confirm('Are you sure you want to delete this invoice?')) {
+      return;
     }
-    setFees(prev => prev.filter(f => f.id !== feeId));
-    const deletedFee = fees.find(f => f.id === feeId);
-    if (deletedFee) {
-      setStats(prev => ({
-        totalDue: prev.totalDue - Number(deletedFee.amount),
-        totalPaid: prev.totalPaid - Number(deletedFee.total_paid),
-        totalPending: prev.totalPending - (Number(deletedFee.amount) - Number(deletedFee.total_paid))
-      }));
-    }
-  } else {
-    alert('Failed to delete invoice: ' + res.error);
-  }
-};
 
-const handlePrint = () => {
-  window.print();
-};
+    const res = await database.fees.delete(feeId);
+    if (res.success) {
+      if (activeInvoice?.id === feeId) {
+        setActiveInvoice(null);
+      }
+      setFees(prev => prev.filter(f => f.id !== feeId));
+      const deletedFee = fees.find(f => f.id === feeId);
+      if (deletedFee) {
+        setStats(prev => ({
+          totalDue: prev.totalDue - Number(deletedFee.amount),
+          totalPaid: prev.totalPaid - Number(deletedFee.total_paid),
+          totalPending: prev.totalPending - (Number(deletedFee.amount) - Number(deletedFee.total_paid))
+        }));
+      }
+    } else {
+      alert('Failed to delete invoice: ' + res.error);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const filteredFees = fees.filter(f => {
     const studentName = f.student_name || '';
@@ -292,182 +291,183 @@ const handlePrint = () => {
     <>
       {!isInvoiceOpen && !isPaymentOpen && !activeInvoice && (
         <div className="fade-in">
-      <h1 className="section-title">Tuition Fees</h1>
+          <h1 className="section-title">Tuition Fees</h1>
 
-      {/* STATS OVERVIEW CARDS */}
-      <div className="dashboard-grid" style={{ marginBottom: '1.5rem' }}>
-        <div className="glass-panel stat-card" style={{ padding: '1.1rem' }}>
-          <div>
-            <span style={styles.statLabel}>Total Invoiced Amount</span>
-            <h3 style={{ ...styles.statValue, color: 'var(--color-primary)' }}>PKR {stats.totalDue.toLocaleString()}</h3>
+          {/* STATS OVERVIEW CARDS */}
+          <div className="dashboard-grid" style={{ marginBottom: '1.5rem' }}>
+            <div className="glass-panel stat-card" style={{ padding: '1.1rem' }}>
+              <div>
+                <span style={styles.statLabel}>Total Invoiced Amount</span>
+                <h3 style={{ ...styles.statValue, color: 'var(--color-primary)' }}>PKR {stats.totalDue.toLocaleString()}</h3>
+              </div>
+              <div className="stat-icon blue" style={{ width: 40, height: 40 }}><Landmark size={20} /></div>
+            </div>
+
+            <div className="glass-panel stat-card" style={{ padding: '1.1rem' }}>
+              <div>
+                <span style={styles.statLabel}>Total Received Cash</span>
+                <h3 style={{ ...styles.statValue, color: 'var(--color-success)' }}>PKR {stats.totalPaid.toLocaleString()}</h3>
+              </div>
+              <div className="stat-icon green" style={{ width: 40, height: 40 }}><Check size={20} /></div>
+            </div>
+
+            <div className="glass-panel stat-card" style={{ padding: '1.1rem' }}>
+              <div>
+                <span style={styles.statLabel}>Outstanding Debts</span>
+                <h3 style={{ ...styles.statValue, color: 'var(--color-danger)' }}>PKR {stats.totalPending.toLocaleString()}</h3>
+              </div>
+              <div className="stat-icon red" style={{ width: 40, height: 40 }}><X size={20} /></div>
+            </div>
           </div>
-          <div className="stat-icon blue" style={{ width: 40, height: 40 }}><Landmark size={20} /></div>
-        </div>
 
-        <div className="glass-panel stat-card" style={{ padding: '1.1rem' }}>
-          <div>
-            <span style={styles.statLabel}>Total Received Cash</span>
-            <h3 style={{ ...styles.statValue, color: 'var(--color-success)' }}>PKR {stats.totalPaid.toLocaleString()}</h3>
-          </div>
-          <div className="stat-icon green" style={{ width: 40, height: 40 }}><Check size={20} /></div>
-        </div>
+          {/* ACTIONS BAR */}
+          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div style={styles.searchBox} className="filter-bar__search">
+              <Search size={16} color="#64748b" />
+              <input autoComplete="off"
+                type="text"
+                placeholder="Search by student name or roll..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
 
-        <div className="glass-panel stat-card" style={{ padding: '1.1rem' }}>
-          <div>
-            <span style={styles.statLabel}>Outstanding Debts</span>
-            <h3 style={{ ...styles.statValue, color: 'var(--color-danger)' }}>PKR {stats.totalPending.toLocaleString()}</h3>
-          </div>
-          <div className="stat-icon red" style={{ width: 40, height: 40 }}><X size={20} /></div>
-        </div>
-      </div>
-
-      {/* ACTIONS BAR */}
-      <div className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
-        <div className="filter-bar__search">
-          <Search size={16} color="var(--color-text-muted)" />
-          <input autoComplete="off"
-            type="text"
-            placeholder="Search by student name or roll..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input-shared"
-          />
-        </div>
-
-        <div className="filter-bar__controls">
-          <Select
-            items={[
-              { value: '', label: 'All Statuses' },
-              { value: 'paid', label: 'Paid', color: 'var(--color-success)' },
-              { value: 'unpaid', label: 'Unpaid', color: 'var(--color-danger)' }
-            ]}
-            value={statusFilter}
-            onChange={setStatusFilter}
-            placeholder="Select status"
-          />
-
-          {canAdd && (
-            <>
-              <button onClick={handleOpenInvoiceModal} className="btn-secondary">
-                Generate Invoice
-              </button>
-              <button onClick={() => handleOpenPaymentModal(null)} className="btn-primary-action">
-                <PlusCircle size={16} /> Record Payment
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* FEES DATA TABLE */}
-      {loading ? (
-        <LoadingSpinner message="Loading fee invoices..." />
-      ) : filteredFees.length === 0 ? (
-        <EmptyState
-          icon={fees.length === 0 ? CreditCard : Search}
-          title={fees.length === 0 ? "No fee invoices registered" : "No matching invoices found"}
-          message={fees.length === 0 ? "Record a new payment or generate invoices to get started." : "Try clearing filters or adjusting your search query."}
-        />
-      ) : (
-        <DataTable
-          columns={[
-            {
-              key: 'student_name',
-              header: 'Student Name',
-              type: 'avatar',
-              subtextKey: 'roll_number',
-              sortable: true
-            },
-            {
-              key: 'amount',
-              header: 'Fee Amount',
-              type: 'currency',
-              sortable: true
-            },
-            {
-              key: 'status',
-              header: 'Status',
-              type: 'badge',
-              sortable: true
-            },
-            {
-              key: 'due_date',
-              header: 'Due Date',
-              sortable: true,
-              render: (fee) => {
-                const isOverdue = new Date(fee.due_date) < new Date() && fee.status === 'unpaid';
-                return (
-                  <div>
-                    <div>{fee.due_date}</div>
-                    {isOverdue && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-danger)', fontWeight: 600 }}>OVERDUE</span>
-                    )}
-                  </div>
-                );
-              }
-            }
-          ]}
-          data={filteredFees}
-          emptyIcon={CreditCard}
-          emptyTitle="No invoices found"
-          emptyMessage="No matching fee invoices found."
-          renderActions={(fee) => (
-            <>
-              {canAdd && fee.status === 'unpaid' && (
-                <button
-                  onClick={() => handleOpenPaymentModal(fee)}
-                  className="action-btn-icon action-success"
-                  data-tooltip="Record Payment"
-                  aria-label="Record Payment"
+            <div style={styles.filtersGroup} className="filter-bar__controls">
+              <div className="select-wrapper" style={{ width: 'auto' }}>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={styles.filterSelect}
                 >
-                  <DollarSign size={15} />
-                </button>
-              )}
-              {fee.total_paid > 0 && (
-                <button
-                  onClick={() => handleOpenReceipt(fee)}
-                  className="action-btn-icon action-print"
-                  data-tooltip="Print Receipt"
-                  aria-label="Print Receipt"
-                >
-                  <Printer size={15} />
-                </button>
-              )}
-              {fee.status === 'unpaid' && (
-                <button
-                  onClick={() => handleMarkPaid(fee.id)}
-                  className="action-btn-icon action-success"
-                  data-tooltip="Mark Paid"
-                  aria-label="Mark Paid"
-                >
-                  <Check size={15} />
-                </button>
-              )}
+                  <option value="">All Statuses</option>
+                  <option value="paid">Paid</option>
+                  <option value="unpaid">Unpaid</option>
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
+              </div>
+
               {canAdd && (
-                <button
-                  onClick={() => handleOpenEditInvoiceModal(fee)}
-                  className="action-btn-icon action-edit"
-                  data-tooltip="Edit Invoice"
-                  aria-label="Edit Invoice"
-                >
-                  <Edit3 size={15} />
-                </button>
+                <>
+                  <button onClick={handleOpenInvoiceModal} className="btn-secondary">
+                    Generate Invoice
+                  </button>
+                  <button onClick={() => handleOpenPaymentModal(null)} className="btn-primary">
+                    <PlusCircle size={16} /> Record Payment
+                  </button>
+                </>
               )}
-              {isEditable && (
-                <button
-                  onClick={() => handleDeleteInvoice(fee.id)}
-                  className="action-btn-icon action-delete"
-                  data-tooltip="Delete Invoice"
-                  aria-label="Delete Invoice"
-                >
-                  <Trash2 size={15} />
-                </button>
+            </div>
+          </div>
+
+          {/* FEES DATA TABLE */}
+          {loading ? (
+            <LoadingSpinner message="Loading fee invoices..." />
+          ) : filteredFees.length === 0 ? (
+            <EmptyState
+              icon={fees.length === 0 ? CreditCard : Search}
+              title={fees.length === 0 ? "No fee invoices registered" : "No matching invoices found"}
+              message={fees.length === 0 ? "Record a new payment or generate invoices to get started." : "Try clearing filters or adjusting your search query."}
+            />
+          ) : (
+            <DataTable
+              columns={[
+                {
+                  key: 'student_name',
+                  header: 'Student Name',
+                  type: 'avatar',
+                  subtextKey: 'roll_number',
+                  sortable: true
+                },
+                {
+                  key: 'amount',
+                  header: 'Fee Amount',
+                  type: 'currency',
+                  sortable: true
+                },
+                {
+                  key: 'status',
+                  header: 'Status',
+                  type: 'badge',
+                  sortable: true
+                },
+                {
+                  key: 'due_date',
+                  header: 'Due Date',
+                  sortable: true,
+                  render: (fee) => {
+                    const isOverdue = new Date(fee.due_date) < new Date() && fee.status === 'unpaid';
+                    return (
+                      <div>
+                        <div>{fee.due_date}</div>
+                        {isOverdue && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-danger)', fontWeight: 600 }}>OVERDUE</span>
+                        )}
+                      </div>
+                    );
+                  }
+                }
+              ]}
+              data={filteredFees}
+              emptyIcon={CreditCard}
+              emptyTitle="No invoices found"
+              emptyMessage="No matching fee invoices found."
+              renderActions={(fee) => (
+                <>
+                  {canAdd && fee.status === 'unpaid' && (
+                    <button
+                      onClick={() => handleOpenPaymentModal(fee)}
+                      className="btn-primary"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                    >
+                      Post Cash
+                    </button>
+                  )}
+                  {fee.total_paid > 0 && (
+                    <button
+                      onClick={() => handleOpenReceipt(fee)}
+                      className="btn-secondary"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                      title="Print Receipt"
+                    >
+                      <Printer size={14} /> Receipt
+                    </button>
+                  )}
+                  {fee.status === 'unpaid' && (
+                    <button
+                      onClick={() => handleMarkPaid(fee.id)}
+                      className="btn-secondary"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#ceead6' }}
+                      title="Mark Paid"
+                    >
+                      <Check size={14} /> Paid
+                    </button>
+                  )}
+                  {canAdd && (
+                    <button
+                      onClick={() => handleOpenEditInvoiceModal(fee)}
+                      className="btn-secondary"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                      title="Edit Invoice"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                  )}
+                  {isEditable && (
+                    <button
+                      onClick={() => handleDeleteInvoice(fee.id)}
+                      className="btn-danger"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                      title="Delete Invoice"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </>
               )}
-            </>
+            />
           )}
-        />
-      )}
-      </div>
+        </div>
       )}
 
       {/* GENERATE BILLING INVOICE MODAL */}
@@ -482,20 +482,20 @@ const handlePrint = () => {
             </div>
 
             <form autoComplete="off" onSubmit={handleInvoiceSubmit} style={styles.modalForm}>
-                <div className="form-group">
-                  <label className="form-label">Status *</label>
-                  <div className="select-wrapper">
-                    <select
-                      value={invoiceForm.status}
-                      onChange={(e) => setInvoiceForm({ ...invoiceForm, status: e.target.value })}
-                      className="form-input"
-                    >
-                      <option value="unpaid">Unpaid</option>
-                      <option value="paid">Paid</option>
-                    </select>
-                    <ChevronDown size={14} className="select-arrow" />
-                  </div>
+              <div className="form-group">
+                <label className="form-label">Status *</label>
+                <div className="select-wrapper">
+                  <select
+                    value={invoiceForm.status}
+                    onChange={(e) => setInvoiceForm({ ...invoiceForm, status: e.target.value })}
+                    className="form-input"
+                  >
+                    <option value="unpaid">Unpaid</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
                 </div>
+              </div>
               <div className="form-group">
                 <label className="form-label">Select Student *</label>
                 <div className="select-wrapper">
@@ -657,10 +657,10 @@ const handlePrint = () => {
 
             {/* School Header with circular logo */}
             <div style={styles.invoiceHeader}>
-              <img 
-                src={logoImg} 
-                style={styles.invoiceLogo} 
-                alt="Dar-ul-Huda circular crest" 
+              <img
+                src={logoImg}
+                style={styles.invoiceLogo}
+                alt="Dar-ul-Huda circular crest"
               />
               <h2 style={styles.schoolHeader} className="brand-title">DAR UL HUDA</h2>
               <p style={styles.schoolTag}>Islamic Secondary & Quran Memorization Academy</p>
@@ -737,7 +737,7 @@ const handlePrint = () => {
                 <p style={{ ...styles.sigText, fontSize: '0.65rem', color: '#94a3b8' }}>Finance Controller</p>
               </div>
             </div>
-            
+
             <p style={styles.invoiceNotice} className="no-print">
               Note: Print receipt formats directly in A4/thermal cash layout.
             </p>

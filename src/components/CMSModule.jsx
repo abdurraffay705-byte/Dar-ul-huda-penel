@@ -4,13 +4,12 @@ import { FileText, PlusCircle, Trash2, Calendar, AlertTriangle, BellRing, Edit3,
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
-import Select from './ui/Select';
 
 
 export default function CMSModule({ userRole }) {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Notice Form Fields
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -111,8 +110,8 @@ export default function CMSModule({ userRole }) {
         {/* PUBLISH NOTICE FORM — full width, always visible to editors */}
         {isEditable ? (
           <div className="glass-panel" style={styles.editorBox}>
-           <h3 style={styles.boxTitle}><PlusCircle size={16} color="var(--color-accent)" style={{ marginRight: 6 }} /> {editingNotice ? 'Edit Announcement Notice' : 'Publish Notice'}</h3>
-            
+            <h3 style={styles.boxTitle}><PlusCircle size={16} color="var(--color-accent)" style={{ marginRight: 6 }} /> {editingNotice ? 'Edit Announcement Notice' : 'Publish Notice'}</h3>
+
             <form autoComplete="off" onSubmit={handlePostNotice} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
               <div className="form-group">
                 <label className="form-label">Announcement Title *</label>
@@ -128,16 +127,19 @@ export default function CMSModule({ userRole }) {
 
               <div className="form-group">
                 <label className="form-label">Urgency Priority Level</label>
-                <Select
-                  items={[
-                    { value: 'High', label: '🔴 High Priority (Red Alert banner)' },
-                    { value: 'Medium', label: '🟡 Medium Priority (Gold info banner)' },
-                    { value: 'Low', label: '🔵 Low Priority (Standard announcement)' }
-                  ]}
-                  value={urgency}
-                  onChange={setUrgency}
-                  placeholder="Select urgency"
-                />
+                <div className="select-wrapper">
+                  <select
+                    value={urgency}
+                    onChange={(e) => setUrgency(e.target.value)}
+                    className="form-input"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <option value="High">🔴 High Priority (Red Alert banner)</option>
+                    <option value="Medium">🟡 Medium Priority (Gold info banner)</option>
+                    <option value="Low">🔵 Low Priority (Standard announcement)</option>
+                  </select>
+                  <ChevronDown size={14} className="select-arrow" />
+                </div>
               </div>
 
               <div className="form-group">
@@ -154,8 +156,8 @@ export default function CMSModule({ userRole }) {
               </div>
 
               {editingNotice && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => {
                     setTitle('');
                     setContent('');
@@ -169,10 +171,10 @@ export default function CMSModule({ userRole }) {
                 </button>
               )}
 
-              <button 
-                type="submit" 
-                disabled={submitting} 
-                className="btn-accent" 
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn-accent"
                 style={{ width: '100%', justifyContent: 'center' }}
               >
                 {submitting ? (
@@ -243,19 +245,19 @@ export default function CMSModule({ userRole }) {
                     <>
                       <button
                         onClick={() => handleOpenEdit(n)}
-                        className="action-btn-icon action-edit"
-                        data-tooltip="Edit Notice"
-                        aria-label="Edit Notice"
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Edit Notice"
                       >
-                        <Edit3 size={15} />
+                        <Edit3 size={14} /> Edit
                       </button>
                       <button
                         onClick={() => handleDelete(n.id)}
-                        className="action-btn-icon action-delete"
-                        data-tooltip="Delete Announcement"
-                        aria-label="Delete Announcement"
+                        className="btn-danger"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Delete Announcement"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={14} /> Delete
                       </button>
                     </>
                   )}

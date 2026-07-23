@@ -59,7 +59,7 @@ export default function UsersModule({ userRole }) {
       setUsers(data);
     } catch (e) {
       console.error('Error loading users:', e);
-      setError(e.message || 'Failed to load users from database.');
+      setError(e.message || 'Failed to load users from Supabase.');
     } finally {
       setLoading(false);
     }
@@ -190,118 +190,118 @@ export default function UsersModule({ userRole }) {
     <>
       {!isFormOpen && (
         <div className="fade-in">
-      <h1 className="section-title">Users Management</h1>
+          <h1 className="section-title">Users Management</h1>
 
-      {/* FILTER & ACTIONS BAR */}
-      <div className="glass-panel filter-bar">
-        <div className="filter-bar__search">
-          <Search size={16} color="var(--color-text-muted)" />
-          <input autoComplete="off"
-            type="text"
-            placeholder="Search by name or phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input-shared"
-          />
-        </div>
+          {/* FILTER & ACTIONS BAR */}
+          <div style={styles.filterBar} className="glass-panel">
+            <div style={styles.searchBox}>
+              <Search size={16} color="#64748b" />
+              <input autoComplete="off"
+                type="text"
+                placeholder="Search by name or phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
 
-        <div className="filter-bar__controls">
-            <Select
-              items={[
-                { value: '', label: 'All Roles' },
-                { value: 'admin', label: 'Admin' },
-                { value: 'teacher', label: 'Teacher' },
-                { value: 'student', label: 'Student' },
-                { value: 'data_entry', label: 'Data entry' }
-              ]}
-              value={roleFilter}
-              onChange={setRoleFilter}
-              placeholder="Select role"
-            />
+            <div style={styles.filtersGroup}>
+              <Select
+                items={[
+                  { value: '', label: 'All Roles' },
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'teacher', label: 'Teacher' },
+                  { value: 'student', label: 'Student' },
+                  { value: 'data_entry', label: 'Data entry' }
+                ]}
+                value={roleFilter}
+                onChange={setRoleFilter}
+                placeholder="Select role"
+              />
 
-          {isEditable && (
-            <button onClick={handleOpenCreateForm} className="btn-primary-action">
-              <UserPlus size={16} /> Add User
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* USERS DATA TABLE */}
-      {error && (
-        <div style={styles.errorBanner}>
-          ⚠️ Database error: {error}
-        </div>
-      )}
-      {loading ? (
-        <LoadingSpinner message="Loading system users..." />
-      ) : filteredUsers.length === 0 ? (
-        <EmptyState
-          icon={users.length === 0 ? UsersIcon : Search}
-          title={users.length === 0 ? "No registered users" : "No matching users found"}
-          message={users.length === 0 ? "Create a new user account to get started." : "Try clearing filters or adjusting your search query."}
-        />
-      ) : (
-        <DataTable
-          columns={[
-            {
-              key: 'full_name',
-              header: 'User Name',
-              type: 'avatar',
-              subtextKey: 'email',
-              sortable: true
-            },
-            {
-              key: 'role',
-              header: 'System Role',
-              type: 'badge',
-              sortable: true
-            },
-            {
-              key: 'phone',
-              header: 'Contact Info',
-              sortable: true,
-              render: (u) => (
-                <div>
-                  <div style={{ fontWeight: 500 }}>{u.phone || '-'}</div>
-                  {u.cnic && (
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>CNIC: {u.cnic}</span>
-                  )}
-                </div>
-              )
-            }
-          ]}
-          data={filteredUsers}
-          emptyIcon={UsersIcon}
-          emptyTitle="No users found"
-          emptyMessage="No matching users found."
-          renderActions={(u) => (
-            <>
               {isEditable && (
+                <button onClick={handleOpenCreateForm} className="btn-primary">
+                  <UserPlus size={16} /> Add User
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* USERS DATA TABLE */}
+          {error && (
+            <div style={styles.errorBanner}>
+              ⚠️ Supabase error: {error}
+            </div>
+          )}
+          {loading ? (
+            <LoadingSpinner message="Loading system users..." />
+          ) : filteredUsers.length === 0 ? (
+            <EmptyState
+              icon={users.length === 0 ? UsersIcon : Search}
+              title={users.length === 0 ? "No registered users" : "No matching users found"}
+              message={users.length === 0 ? "Create a new user account to get started." : "Try clearing filters or adjusting your search query."}
+            />
+          ) : (
+            <DataTable
+              columns={[
+                {
+                  key: 'full_name',
+                  header: 'User Name',
+                  type: 'avatar',
+                  subtextKey: 'email',
+                  sortable: true
+                },
+                {
+                  key: 'role',
+                  header: 'System Role',
+                  type: 'badge',
+                  sortable: true
+                },
+                {
+                  key: 'phone',
+                  header: 'Contact Info',
+                  sortable: true,
+                  render: (u) => (
+                    <div>
+                      <div style={{ fontWeight: 500 }}>{u.phone || '-'}</div>
+                      {u.cnic && (
+                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>CNIC: {u.cnic}</span>
+                      )}
+                    </div>
+                  )
+                }
+              ]}
+              data={filteredUsers}
+              emptyIcon={UsersIcon}
+              emptyTitle="No users found"
+              emptyMessage="No matching users found."
+              renderActions={(u) => (
                 <>
-                  <button
-                    onClick={() => handleOpenEditForm(u)}
-                    className="action-btn-icon action-edit"
-                    data-tooltip="Edit Details"
-                    aria-label="Edit Details"
-                  >
-                    <Edit3 size={15} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(u.id)}
-                    className="action-btn-icon action-delete"
-                    data-tooltip="Remove User"
-                    aria-label="Remove User"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {isEditable && (
+                    <>
+                      <button
+                        onClick={() => handleOpenEditForm(u)}
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Edit Details"
+                      >
+                        <Edit3 size={14} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(u.id)}
+                        className="btn-danger"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Remove"
+                      >
+                        <Trash2 size={14} /> Remove
+                      </button>
+                    </>
+                  )}
                 </>
               )}
-            </>
+            />
           )}
-        />
-      )}
-      </div>
+        </div>
       )}
 
       {/* ADD / EDIT USER MODAL */}
@@ -317,7 +317,7 @@ export default function UsersModule({ userRole }) {
 
             <form autoComplete="off" onSubmit={handleFormSubmit} style={styles.modalForm}>
               <h4 style={{ margin: '0 0 1rem 0', color: 'var(--color-primary)' }}>Personal Information</h4>
-              
+
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Full Name *</label>
@@ -432,7 +432,7 @@ export default function UsersModule({ userRole }) {
               </div>
 
               <h4 style={{ margin: '1.5rem 0 1rem 0', color: 'var(--color-primary)', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>Login Credentials</h4>
-              
+
               <div className="form-row">
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Email Address</label>
@@ -506,20 +506,20 @@ export default function UsersModule({ userRole }) {
           <div className="glass-panel fade-in modal-card">
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>User Created Successfully</h3>
-              <button 
-                onClick={() => setCreatedCredentials(null)} 
+              <button
+                onClick={() => setCreatedCredentials(null)}
                 style={styles.closeBtn}
                 className="btn-icon-only"
               >
                 <X size={18} />
               </button>
             </div>
-            
+
             <div style={{ padding: '0.5rem 0 1rem 0' }}>
               <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
                 Please copy and share these credentials with the user immediately. The password is not stored in plaintext and cannot be recovered later.
               </p>
-              
+
               <div style={styles.credentialBox}>
                 <div style={styles.credentialRow}>
                   <strong>Email:</strong> <code style={{ marginLeft: 8, fontSize: '0.95rem', backgroundColor: '#fff', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: 4, color: 'var(--color-text-main)' }}>{createdCredentials.email}</code>
@@ -531,19 +531,19 @@ export default function UsersModule({ userRole }) {
             </div>
 
             <div style={styles.modalActions}>
-              <button 
-                type="button" 
-                onClick={() => setCreatedCredentials(null)} 
+              <button
+                type="button"
+                onClick={() => setCreatedCredentials(null)}
                 className="btn-secondary"
               >
                 Close
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(`Email: ${createdCredentials.email}\nPassword: ${createdCredentials.password}`);
                   alert("Credentials copied to clipboard!");
-                }} 
+                }}
                 className="btn-accent"
               >
                 Copy Credentials

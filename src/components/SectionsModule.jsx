@@ -10,12 +10,12 @@ export default function SectionsModule({ userRole }) {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+
   // Modal & Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     program: '',
@@ -201,19 +201,19 @@ export default function SectionsModule({ userRole }) {
                     <>
                       <button
                         onClick={() => handleOpenEditForm(sec)}
-                        className="action-btn-icon action-edit"
-                        data-tooltip="Edit Section"
-                        aria-label="Edit Section"
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Edit Section"
                       >
-                        <Edit3 size={15} />
+                        <Edit3 size={14} /> Edit
                       </button>
                       <button
                         onClick={() => handleDelete(sec.id)}
-                        className="action-btn-icon action-delete"
-                        data-tooltip="Delete Section"
-                        aria-label="Delete Section"
+                        className="btn-danger"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Delete Section"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={14} /> Delete
                       </button>
                     </>
                   )}

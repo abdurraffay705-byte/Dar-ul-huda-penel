@@ -62,7 +62,7 @@ export default function App() {
         if (!mounted) return;
 
         if (currentUser) {
-           setUser(currentUser);
+          setUser(currentUser);
           setDefaultTabForRole(currentUser.role);
         }
       } catch (err) {
@@ -135,15 +135,15 @@ export default function App() {
         />
 
         {/* Root redirect */}
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             user ? (
               <Navigate to={`/${getDefaultTabForRole(user.role)}`} replace />
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
 
         {/* Protected module routes — all top-level with absolute paths */}
@@ -160,7 +160,7 @@ export default function App() {
           { path: '/sections', element: <SectionsModule userRole={user?.role} user={user} /> },
           { path: '/my-section', element: <MySectionModule user={user} /> },
           { path: '/student-attendance', element: <StudentAttendanceModule user={user} /> },
-          { path: '/student-fees', element: <StudentFeesModule user={user} /> }
+          { path: '/student-fees', element: <StudentFeesModule user={user} /> },
         ].map(({ path, element }) => (
           <Route
             key={path}
@@ -229,7 +229,7 @@ export default function App() {
 
                       {/* MAIN CONTENT WORKSPACE VIEWPORT */}
                       <main style={styles.mainContent}>
-                         <ErrorBoundary>{element}</ErrorBoundary>
+                        <ErrorBoundary>{element}</ErrorBoundary>
                       </main>
                     </div>
                   );
