@@ -201,19 +201,19 @@ export default function TeachersModule({ userRole }) {
           <h1 className="section-title">Instructors Registry</h1>
 
           {/* FILTER ACTION BAR */}
-          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredTeachers.length === 0 ? 'configBarExpanded' : ''}`}>
-            <div style={styles.searchBox} className="filter-bar__search">
+          <div className={`glass-panel filter-bar ${!loading && filteredTeachers.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div className="filter-bar__search">
               <Search size={18} color="var(--color-text-muted)" />
               <input autoComplete="off"
                 type="text"
                 placeholder="Search by instructor name, subject..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={styles.searchInput}
+                className="search-input-shared"
               />
             </div>
 
-            <div style={styles.filtersGroup} className="filter-bar__controls">
+            <div className="filter-bar__controls">
               <Select
                 items={[
                   { value: '', label: 'All Subjects' },

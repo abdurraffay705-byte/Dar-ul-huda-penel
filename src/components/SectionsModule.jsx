@@ -132,19 +132,19 @@ export default function SectionsModule({ userRole }) {
           <h1 className="section-title">Sections Registry</h1>
 
           {/* FILTER & ACTIONS BAR */}
-          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredSections.length === 0 ? 'configBarExpanded' : ''}`}>
-            <div style={styles.searchBox} className="filter-bar__search">
-              <Search size={16} color="#64748b" />
+          <div className={`glass-panel filter-bar ${!loading && filteredSections.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div className="filter-bar__search">
+              <Search size={16} color="var(--color-text-muted)" />
               <input autoComplete="off"
                 type="text"
                 placeholder="Search by section name or program..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={styles.searchInput}
+                className="search-input-shared"
               />
             </div>
 
-            <div style={styles.filtersGroup} className="filter-bar__controls">
+            <div className="filter-bar__controls">
               {isEditable && (
                 <button onClick={handleOpenCreateForm} className="btn-primary">
                   <PlusCircle size={16} /> Create Section

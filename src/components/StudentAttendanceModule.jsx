@@ -92,14 +92,14 @@ export default function StudentAttendanceModule({ user }) {
           <div className="glass-panel" style={styles.tableCard}>
             <div style={styles.cardHeader}>
               <h3 style={styles.cardTitle}><Calendar size={18} style={{ verticalAlign: 'middle', marginRight: 6 }} /> My Attendance Logs</h3>
-              <div style={styles.searchBox}>
-                <Search size={14} color="#64748b" />
+              <div className="filter-bar__search" style={{ maxWidth: '280px' }}>
+                <Search size={16} color="var(--color-text-muted)" />
                 <input autoComplete="off"
                   type="text"
                   placeholder="Filter by date (YYYY-MM-DD)..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={styles.searchInput}
+                  className="search-input-shared"
                 />
               </div>
             </div>

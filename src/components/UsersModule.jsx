@@ -193,19 +193,19 @@ export default function UsersModule({ userRole }) {
           <h1 className="section-title">Users Management</h1>
 
           {/* FILTER & ACTIONS BAR */}
-          <div style={styles.filterBar} className="glass-panel">
-            <div style={styles.searchBox}>
-              <Search size={16} color="#64748b" />
+          <div className="glass-panel filter-bar">
+            <div className="filter-bar__search">
+              <Search size={16} color="var(--color-text-muted)" />
               <input autoComplete="off"
                 type="text"
                 placeholder="Search by name or phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={styles.searchInput}
+                className="search-input-shared"
               />
             </div>
 
-            <div style={styles.filtersGroup}>
+            <div className="filter-bar__controls">
               <Select
                 items={[
                   { value: '', label: 'All Roles' },

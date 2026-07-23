@@ -107,15 +107,15 @@ export default function CoursesModule({ userRole }) {
       <h1 className="section-title">Courses Registry</h1>
 
       {/* FILTER & ACTIONS BAR */}
-      <div style={styles.filterBar} className="glass-panel">
-        <div style={styles.searchBox}>
-          <BookOpen size={16} color="#64748b" />
+      <div className="glass-panel filter-bar">
+        <div className="filter-bar__search">
+          <BookOpen size={16} color="var(--color-text-muted)" />
           <input autoComplete="off"
             type="text"
             placeholder="Search by course title or details..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={styles.searchInput}
+            className="search-input-shared"
           />
         </div>
 

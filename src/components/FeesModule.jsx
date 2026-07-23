@@ -322,19 +322,19 @@ export default function FeesModule({ userRole }) {
           </div>
 
           {/* ACTIONS BAR */}
-          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
-            <div style={styles.searchBox} className="filter-bar__search">
-              <Search size={16} color="#64748b" />
-              <input autoComplete="off"
-                type="text"
-                placeholder="Search by student name or roll..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={styles.searchInput}
-              />
-            </div>
+      <div className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
+        <div className="filter-bar__search">
+          <Search size={16} color="var(--color-text-muted)" />
+          <input autoComplete="off"
+            type="text"
+            placeholder="Search by student name or roll..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input-shared"
+          />
+        </div>
 
-            <div style={styles.filtersGroup} className="filter-bar__controls">
+        <div className="filter-bar__controls">
               <div className="select-wrapper" style={{ width: 'auto' }}>
                 <select
                   value={statusFilter}

@@ -204,19 +204,19 @@ export default function DonationsModule({ userRole }) {
           <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
 
           {/* SEARCH AND FILTERS */}
-          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
-            <div style={styles.searchBox} className="filter-bar__search">
-              <Search size={16} color="#64748b" />
+          <div className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div className="filter-bar__search">
+              <Search size={16} color="var(--color-text-muted)" />
               <input autoComplete="off"
                 type="text"
                 placeholder="Search by donor name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={styles.searchInput}
+                className="search-input-shared"
               />
             </div>
 
-            <div style={styles.filtersGroup} className="filter-bar__controls">
+            <div className="filter-bar__controls">
               <div className="select-wrapper" style={{ width: 'auto' }}>
                 <select
                   value={sourceFilter}
