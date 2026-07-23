@@ -7,8 +7,8 @@ export default function SettingsModule() {
   const [copied, setCopied] = useState(false);
 
   const handleCopySql = () => {
-    const sqlText = `-- Dar ul Huda School Management System - Supabase Schema
--- Run this in your Supabase SQL Editor.
+    const sqlText = `-- Dar ul Huda School Management System - Database Schema
+-- Run this in your SQL Editor.
 -- Full schema is saved in your project root at \`schema.sql\``;
     navigator.clipboard.writeText(sqlText);
     setCopied(true);
@@ -21,7 +21,7 @@ export default function SettingsModule() {
 
   return (
     <div className="fade-in" style={styles.container}>
-      <h1 className="section-title">Supabase Settings</h1>
+      <h1 className="section-title">System Settings</h1>
 
       <div style={styles.settingsGrid}>
         {/* CONNECTION STATUS */}
@@ -31,7 +31,7 @@ export default function SettingsModule() {
             Database Connection
           </h3>
           <p style={styles.cardDesc}>
-            This application reads its Supabase connection from environment variables
+            This application reads its database connection from environment variables
             (<code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your{' '}
             <code>.env</code> file). No credentials are stored in code or in the browser.
           </p>
@@ -45,10 +45,10 @@ export default function SettingsModule() {
               <CheckCircle2 size={20} color="var(--color-success)" />
               <div>
                 <strong style={{ color: 'var(--color-success)', fontSize: '0.9rem' }}>
-                  STATUS: Supabase Live Connected
+                  STATUS: Database Connected
                 </strong>
                 <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-                  All reads and writes go directly to your Supabase project.
+                  All reads and writes go directly to your cloud database project.
                   {projectRef && (
                     <> Project ref: <code>{projectRef}</code></>
                   )}
@@ -90,7 +90,7 @@ export default function SettingsModule() {
           </h3>
           <p style={styles.cardDesc}>
             The full database schema is in <code>schema.sql</code> at the project root.
-            Run it in the Supabase SQL Editor to (re-)initialize all tables.
+            Run it in your SQL Editor to (re-)initialize all tables.
           </p>
 
           <h4 style={styles.instructionTitle}>Tables in this project:</h4>
@@ -124,7 +124,7 @@ export default function SettingsModule() {
           </div>
 
           <pre style={styles.sqlCode}>
-{`-- Run schema.sql in your Supabase SQL Editor.
+{`-- Run schema.sql in your SQL Editor.
 -- File location: <project_root>/schema.sql
 -- No manual changes needed if tables already exist.`}
           </pre>

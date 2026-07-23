@@ -40,7 +40,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
     { id: 'fees', label: 'Tuition Fees', icon: CreditCard, roles: ['admin', 'data_entry'] },
     { id: 'donations', label: 'Donation Funds', icon: HeartHandshake, roles: ['admin', 'data_entry'] },
     { id: 'cms', label: 'CMS Notice Board', icon: FileText, roles: ['admin', 'data_entry', 'student'] },
-    { id: 'settings', label: 'Supabase Settings', icon: Settings, roles: ['admin'] }
+    { id: 'settings', label: 'System Settings', icon: Settings, roles: ['admin'] }
   ];
 
   // Filter items based on user role
@@ -94,16 +94,6 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
 
       {/* FOOTER & LOGOUT */}
       <div style={styles.footer}>
-        <div style={styles.dbStatus}>
-          <div style={{
-            ...styles.statusDot,
-            backgroundColor: '#10b981'
-          }} />
-          <span style={styles.dbStatusText}>
-            Supabase Live
-          </span>
-        </div>
-
         <button onClick={onLogout} style={styles.logoutBtn}>
           <LogOut size={16} style={{ marginRight: 8 }} /> Sign Out
         </button>
@@ -252,21 +242,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem'
-  },
-  dbStatus: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    fontSize: '0.75rem',
-    color: '#94a3b8'
-  },
-  statusDot: {
-    width: '8px',
-    height: '8px',
-    borderRadius: '50%'
-  },
-  dbStatusText: {
-    fontWeight: '500'
   },
   logoutBtn: {
     display: 'flex',

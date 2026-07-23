@@ -59,7 +59,7 @@ export default function UsersModule({ userRole }) {
       setUsers(data);
     } catch (e) {
       console.error('Error loading users:', e);
-      setError(e.message || 'Failed to load users from Supabase.');
+      setError(e.message || 'Failed to load users from database.');
     } finally {
       setLoading(false);
     }
@@ -230,7 +230,7 @@ export default function UsersModule({ userRole }) {
       {/* USERS DATA TABLE */}
       {error && (
         <div style={styles.errorBanner}>
-          ⚠️ Supabase error: {error}
+          ⚠️ Database error: {error}
         </div>
       )}
       {loading ? (
