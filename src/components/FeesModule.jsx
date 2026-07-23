@@ -5,6 +5,7 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import logoImg from '../assets/logo.jpg';
+import Select from './ui/Select';
 
 
 export default function FeesModule({ userRole }) {
@@ -321,38 +322,36 @@ const handlePrint = () => {
       </div>
 
       {/* ACTIONS BAR */}
-      <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
-        <div style={styles.searchBox} className="filter-bar__search">
-          <Search size={16} color="#64748b" />
+      <div className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
+        <div className="filter-bar__search">
+          <Search size={16} color="var(--color-text-muted)" />
           <input autoComplete="off"
             type="text"
             placeholder="Search by student name or roll..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={styles.searchInput}
+            className="search-input-shared"
           />
         </div>
 
-        <div style={styles.filtersGroup} className="filter-bar__controls">
-          <div className="select-wrapper" style={{ width: 'auto' }}>
-            <select 
-              value={statusFilter} 
-              onChange={(e) => setStatusFilter(e.target.value)} 
-              style={styles.filterSelect}
-            >
-              <option value="">All Statuses</option>
-              <option value="paid">Paid</option>
-              <option value="unpaid">Unpaid</option>
-            </select>
-            <ChevronDown size={14} className="select-arrow" />
-          </div>
+        <div className="filter-bar__controls">
+          <Select
+            items={[
+              { value: '', label: 'All Statuses' },
+              { value: 'paid', label: 'Paid', color: 'var(--color-success)' },
+              { value: 'unpaid', label: 'Unpaid', color: 'var(--color-danger)' }
+            ]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            placeholder="Select status"
+          />
 
           {canAdd && (
             <>
               <button onClick={handleOpenInvoiceModal} className="btn-secondary">
                 Generate Invoice
               </button>
-              <button onClick={() => handleOpenPaymentModal(null)} className="btn-primary">
+              <button onClick={() => handleOpenPaymentModal(null)} className="btn-primary-action">
                 <PlusCircle size={16} /> Record Payment
               </button>
             </>

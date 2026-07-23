@@ -4,6 +4,7 @@ import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, Shiel
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
+import Select from './ui/Select';
 
 
 export default function DonationsModule({ userRole }) {
@@ -203,32 +204,30 @@ export default function DonationsModule({ userRole }) {
       <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
 
       {/* SEARCH AND FILTERS */}
-      <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
-        <div style={styles.searchBox} className="filter-bar__search">
-          <Search size={16} color="#64748b" />
+      <div className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
+        <div className="filter-bar__search">
+          <Search size={16} color="var(--color-text-muted)" />
           <input autoComplete="off"
             type="text"
             placeholder="Search by donor name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={styles.searchInput}
+            className="search-input-shared"
           />
         </div>
 
-        <div style={styles.filtersGroup} className="filter-bar__controls">
-          <div className="select-wrapper" style={{ width: 'auto' }}>
-            <select 
-              value={sourceFilter} 
-              onChange={(e) => setSourceFilter(e.target.value)} 
-              style={styles.filterSelect}
-            >
-              <option value="">All Sources</option>
-              <option value="General Sadqah Fund">General Sadqah Fund</option>
-              <option value="Orphan Sponsorship">Orphan Sponsorship</option>
-              <option value="Mosque Hall Extension">Mosque Hall Extension</option>
-            </select>
-            <ChevronDown size={14} className="select-arrow" />
-          </div>
+        <div className="filter-bar__controls">
+          <Select
+            items={[
+              { value: '', label: 'All Sources' },
+              { value: 'General Sadqah Fund', label: 'General Sadqah Fund' },
+              { value: 'Orphan Sponsorship', label: 'Orphan Sponsorship' },
+              { value: 'Mosque Hall Extension', label: 'Mosque Hall Extension' }
+            ]}
+            value={sourceFilter}
+            onChange={setSourceFilter}
+            placeholder="Select source"
+          />
         </div>
       </div>
 

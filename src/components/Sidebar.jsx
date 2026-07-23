@@ -8,7 +8,6 @@ import {
   CheckSquare,
   HeartHandshake,
   FileText,
-  Settings,
   LogOut,
   BookOpen,
   Layers
@@ -39,8 +38,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
     { id: 'student-fees', label: 'My Fee Voucher', icon: CreditCard, roles: ['student'] },
     { id: 'fees', label: 'Tuition Fees', icon: CreditCard, roles: ['admin', 'data_entry'] },
     { id: 'donations', label: 'Donation Funds', icon: HeartHandshake, roles: ['admin', 'data_entry'] },
-    { id: 'cms', label: 'CMS Notice Board', icon: FileText, roles: ['admin', 'data_entry', 'student'] },
-    { id: 'settings', label: 'System Settings', icon: Settings, roles: ['admin'] }
+    { id: 'cms', label: 'CMS Notice Board', icon: FileText, roles: ['admin', 'data_entry', 'student'] }
   ];
 
   // Filter items based on user role

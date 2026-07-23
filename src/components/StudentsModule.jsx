@@ -5,6 +5,7 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import Badge from './Badge';
+import Select from './ui/Select';
 
 
 
@@ -260,38 +261,37 @@ export default function StudentsModule({ userRole, user }) {
       <h1 className="section-title">Students Roster</h1>
       
       {/* FILTER ACTION BAR */}
-      <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredStudents.length === 0 ? 'configBarExpanded' : ''}`}>
-        <div style={styles.searchBox} className="filter-bar__search">
+      <div className={`glass-panel filter-bar ${!loading && filteredStudents.length === 0 ? 'configBarExpanded' : ''}`}>
+        <div className="filter-bar__search">
+          <Search size={18} color="var(--color-text-muted)" />
           <input autoComplete="off"
             type="text"
             placeholder="Search by student name, roll number, father..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={styles.searchInput}
+            className="search-input-shared"
           />
         </div>
         
-        <div style={styles.filtersGroup} className="filter-bar__controls">
-          <div className="select-wrapper" style={{ width: 'auto' }}>
-            <select 
-              value={classFilter} 
-              onChange={(e) => setClassFilter(e.target.value)} 
-              style={styles.filterSelect}
-            >
-              <option value="">All Classes</option>
-              <option value="Grade 1">Grade 1</option>
-              <option value="Grade 2">Grade 2</option>
-              <option value="Grade 3">Grade 3</option>
-              <option value="Grade 4">Grade 4</option>
-              <option value="Grade 5">Grade 5</option>
-              <option value="Hifz">Hifz</option>
-              <option value="Nazra">Nazra</option>
-            </select>
-            <ChevronDown size={14} className="select-arrow" />
-          </div>
+        <div className="filter-bar__controls">
+          <Select
+            items={[
+              { value: '', label: 'All Classes' },
+              { value: 'Grade 1', label: 'Grade 1' },
+              { value: 'Grade 2', label: 'Grade 2' },
+              { value: 'Grade 3', label: 'Grade 3' },
+              { value: 'Grade 4', label: 'Grade 4' },
+              { value: 'Grade 5', label: 'Grade 5' },
+              { value: 'Hifz', label: 'Hifz' },
+              { value: 'Nazra', label: 'Nazra' }
+            ]}
+            value={classFilter}
+            onChange={setClassFilter}
+            placeholder="Select class"
+          />
 
           {isEditable && (
-            <button onClick={handleOpenCreateForm} className="btn-primary">
+            <button onClick={handleOpenCreateForm} className="btn-primary-action">
               <UserPlus size={16} /> Admit Student
             </button>
           )}
