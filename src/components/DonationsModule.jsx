@@ -217,19 +217,17 @@ export default function DonationsModule({ userRole }) {
             </div>
 
             <div className="filter-bar__controls">
-              <div className="select-wrapper" style={{ width: 'auto' }}>
-                <select
-                  value={sourceFilter}
-                  onChange={(e) => setSourceFilter(e.target.value)}
-                  style={styles.filterSelect}
-                >
-                  <option value="">All Sources</option>
-                  <option value="General Sadqah Fund">General Sadqah Fund</option>
-                  <option value="Orphan Sponsorship">Orphan Sponsorship</option>
-                  <option value="Mosque Hall Extension">Mosque Hall Extension</option>
-                </select>
-                <ChevronDown size={14} className="select-arrow" />
-              </div>
+              <Select
+                items={[
+                  { value: '', label: 'All Sources' },
+                  { value: 'General Sadqah Fund', label: 'General Sadqah Fund' },
+                  { value: 'Orphan Sponsorship', label: 'Orphan Sponsorship' },
+                  { value: 'Mosque Hall Extension', label: 'Mosque Hall Extension' }
+                ]}
+                value={sourceFilter}
+                onChange={setSourceFilter}
+                placeholder="Select source"
+              />
             </div>
           </div>
 

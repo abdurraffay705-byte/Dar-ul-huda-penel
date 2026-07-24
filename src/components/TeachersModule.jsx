@@ -229,7 +229,7 @@ export default function TeachersModule({ userRole }) {
               />
 
               {canAdd && (
-                <button onClick={handleOpenCreateForm} className="btn-primary">
+                <button onClick={handleOpenCreateForm} className="btn-primary-action">
                   <UserPlus size={16} /> Appoint Instructor
                 </button>
               )}

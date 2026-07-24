@@ -274,26 +274,24 @@ export default function StudentsModule({ userRole, user }) {
             </div>
 
             <div className="filter-bar__controls">
-              <div className="select-wrapper" style={{ width: 'auto' }}>
-                <select
-                  value={classFilter}
-                  onChange={(e) => setClassFilter(e.target.value)}
-                  style={styles.filterSelect}
-                >
-                  <option value="">All Classes</option>
-                  <option value="Grade 1">Grade 1</option>
-                  <option value="Grade 2">Grade 2</option>
-                  <option value="Grade 3">Grade 3</option>
-                  <option value="Grade 4">Grade 4</option>
-                  <option value="Grade 5">Grade 5</option>
-                  <option value="Hifz">Hifz</option>
-                  <option value="Nazra">Nazra</option>
-                </select>
-                <ChevronDown size={14} className="select-arrow" />
-              </div>
+              <Select
+                items={[
+                  { value: '', label: 'All Classes' },
+                  { value: 'Grade 1', label: 'Grade 1' },
+                  { value: 'Grade 2', label: 'Grade 2' },
+                  { value: 'Grade 3', label: 'Grade 3' },
+                  { value: 'Grade 4', label: 'Grade 4' },
+                  { value: 'Grade 5', label: 'Grade 5' },
+                  { value: 'Hifz', label: 'Hifz' },
+                  { value: 'Nazra', label: 'Nazra' }
+                ]}
+                value={classFilter}
+                onChange={setClassFilter}
+                placeholder="Select class"
+              />
 
               {isEditable && (
-                <button onClick={handleOpenCreateForm} className="btn-primary">
+                <button onClick={handleOpenCreateForm} className="btn-primary-action">
                   <UserPlus size={16} /> Admit Student
                 </button>
               )}

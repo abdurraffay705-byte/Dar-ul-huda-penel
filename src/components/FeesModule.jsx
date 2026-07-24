@@ -335,30 +335,28 @@ export default function FeesModule({ userRole }) {
         </div>
 
         <div className="filter-bar__controls">
-              <div className="select-wrapper" style={{ width: 'auto' }}>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={styles.filterSelect}
-                >
-                  <option value="">All Statuses</option>
-                  <option value="paid">Paid</option>
-                  <option value="unpaid">Unpaid</option>
-                </select>
-                <ChevronDown size={14} className="select-arrow" />
-              </div>
+          <Select
+            items={[
+              { value: '', label: 'All Statuses' },
+              { value: 'paid', label: 'Paid', color: 'var(--color-success)' },
+              { value: 'unpaid', label: 'Unpaid', color: 'var(--color-danger)' }
+            ]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            placeholder="Select status"
+          />
 
-              {canAdd && (
-                <>
-                  <button onClick={handleOpenInvoiceModal} className="btn-secondary">
-                    Generate Invoice
-                  </button>
-                  <button onClick={() => handleOpenPaymentModal(null)} className="btn-primary">
-                    <PlusCircle size={16} /> Record Payment
-                  </button>
-                </>
-              )}
-            </div>
+          {canAdd && (
+            <>
+              <button onClick={handleOpenInvoiceModal} className="btn-secondary">
+                Generate Invoice
+              </button>
+              <button onClick={() => handleOpenPaymentModal(null)} className="btn-primary-action">
+                <PlusCircle size={16} /> Record Payment
+              </button>
+            </>
+          )}
+        </div>
           </div>
 
           {/* FEES DATA TABLE */}

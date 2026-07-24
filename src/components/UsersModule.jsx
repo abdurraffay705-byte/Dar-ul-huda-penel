@@ -220,7 +220,7 @@ export default function UsersModule({ userRole }) {
               />
 
               {isEditable && (
-                <button onClick={handleOpenCreateForm} className="btn-primary">
+                <button onClick={handleOpenCreateForm} className="btn-primary-action">
                   <UserPlus size={16} /> Add User
                 </button>
               )}

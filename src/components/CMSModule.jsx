@@ -128,19 +128,16 @@ export default function CMSModule({ userRole }) {
 
               <div className="form-group">
                 <label className="form-label">Urgency Priority Level</label>
-                <div className="select-wrapper">
-                  <select
-                    value={urgency}
-                    onChange={(e) => setUrgency(e.target.value)}
-                    className="form-input"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <option value="High">🔴 High Priority (Red Alert banner)</option>
-                    <option value="Medium">🟡 Medium Priority (Gold info banner)</option>
-                    <option value="Low">🔵 Low Priority (Standard announcement)</option>
-                  </select>
-                  <ChevronDown size={14} className="select-arrow" />
-                </div>
+                <Select
+                  items={[
+                    { value: 'High', label: '🔴 High Priority (Red Alert banner)' },
+                    { value: 'Medium', label: '🟡 Medium Priority (Gold info banner)' },
+                    { value: 'Low', label: '🔵 Low Priority (Standard announcement)' }
+                  ]}
+                  value={urgency}
+                  onChange={setUrgency}
+                  placeholder="Select urgency"
+                />
               </div>
 
               <div className="form-group">
