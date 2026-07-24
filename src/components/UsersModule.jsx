@@ -5,7 +5,6 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import Select from './ui/Select';
 import LoadingSpinner from './LoadingSpinner';
-import Drawer from './ui/Drawer';
 
 
 export default function UsersModule({ userRole }) {
@@ -16,7 +15,6 @@ export default function UsersModule({ userRole }) {
   const [roleFilter, setRoleFilter] = useState('');
 
   // Modal & Form State
-  const [activeUser, setActiveUser] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,19 +193,19 @@ export default function UsersModule({ userRole }) {
           <h1 className="section-title">Users Management</h1>
 
           {/* FILTER & ACTIONS BAR */}
-          <div className="glass-panel filter-bar">
-            <div className="filter-bar__search">
-              <Search size={16} color="var(--color-text-muted)" />
+          <div style={styles.filterBar} className="glass-panel">
+            <div style={styles.searchBox}>
+              <Search size={16} color="#64748b" />
               <input autoComplete="off"
                 type="text"
                 placeholder="Search by name or phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="search-input-shared"
+                style={styles.searchInput}
               />
             </div>
 
-            <div className="filter-bar__controls">
+            <div style={styles.filtersGroup}>
               <Select
                 items={[
                   { value: '', label: 'All Roles' },
@@ -222,7 +220,7 @@ export default function UsersModule({ userRole }) {
               />
 
               {isEditable && (
-                <button onClick={handleOpenCreateForm} className="btn-primary-action">
+                <button onClick={handleOpenCreateForm} className="btn-primary">
                   <UserPlus size={16} /> Add User
                 </button>
               )}
@@ -279,31 +277,23 @@ export default function UsersModule({ userRole }) {
               emptyMessage="No matching users found."
               renderActions={(u) => (
                 <>
-                  <button
-                    onClick={() => setActiveUser(u)}
-                    className="action-btn-icon action-view"
-                    data-tooltip="View Details"
-                    aria-label="View Details"
-                  >
-                    <Eye size={15} />
-                  </button>
                   {isEditable && (
                     <>
                       <button
                         onClick={() => handleOpenEditForm(u)}
-                        className="action-btn-icon action-edit"
-                        data-tooltip="Edit Details"
-                        aria-label="Edit Details"
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Edit Details"
                       >
-                        <Edit3 size={15} />
+                        <Edit3 size={14} /> Edit
                       </button>
                       <button
                         onClick={() => handleDelete(u.id)}
-                        className="action-btn-icon action-delete"
-                        data-tooltip="Remove User"
-                        aria-label="Remove User"
+                        className="btn-danger"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="Remove"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={14} /> Remove
                       </button>
                     </>
                   )}
@@ -311,49 +301,6 @@ export default function UsersModule({ userRole }) {
               )}
             />
           )}
-
-          {/* USER DETAIL PROFILE DRAWER */}
-          <Drawer
-            isOpen={!!activeUser}
-            onClose={() => setActiveUser(null)}
-            title="System User Details"
-            subtitle={activeUser?.email || ''}
-          >
-            {activeUser && (
-              <>
-                <div style={styles.profileCard}>
-                  <div style={styles.profileAvatar}>
-                    {activeUser.full_name?.charAt(0) || activeUser.email?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                  <h4 style={styles.profileName}>{activeUser.full_name || 'System Account'}</h4>
-                  <Badge label={activeUser.role ? activeUser.role.toUpperCase() : 'USER'} type="user" />
-                </div>
-
-                <div style={styles.detailsGrid}>
-                  <div style={styles.detailItem}>
-                    <span style={styles.detailLabel}>Full Name</span>
-                    <span style={styles.detailVal}>{activeUser.full_name || '-'}</span>
-                  </div>
-                  <div style={styles.detailItem}>
-                    <span style={styles.detailLabel}>Email Address</span>
-                    <span style={styles.detailVal}>{activeUser.email || '-'}</span>
-                  </div>
-                  <div style={styles.detailItem}>
-                    <span style={styles.detailLabel}>Assigned System Role</span>
-                    <span style={styles.detailVal}>{activeUser.role || '-'}</span>
-                  </div>
-                  <div style={styles.detailItem}>
-                    <span style={styles.detailLabel}>Phone Contact</span>
-                    <span style={styles.detailVal}>{activeUser.phone || 'Not Specified'}</span>
-                  </div>
-                  <div style={styles.detailItem}>
-                    <span style={styles.detailLabel}>Account Created</span>
-                    <span style={styles.detailVal}>{activeUser.created_at ? new Date(activeUser.created_at).toLocaleDateString() : '-'}</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </Drawer>
         </div>
       )}
 

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3, ChevronDown, Calendar, GraduationCap, Loader2, DollarSign } from 'lucide-react';
+import { CreditCard, Search, PlusCircle, Printer, X, Check, Landmark, History, Trash2, Edit3, ChevronDown, Calendar, GraduationCap, Loader2, Eye } from 'lucide-react';
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import logoImg from '../assets/logo.jpg';
 import Select from './ui/Select';
+import Drawer from './ui/Drawer';
 
 
 export default function FeesModule({ userRole }) {
@@ -17,6 +18,7 @@ export default function FeesModule({ userRole }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Modals
+  const [activeFee, setActiveFee] = useState(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [activeInvoice, setActiveInvoice] = useState(null);
@@ -322,41 +324,43 @@ export default function FeesModule({ userRole }) {
           </div>
 
           {/* ACTIONS BAR */}
-      <div className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
-        <div className="filter-bar__search">
-          <Search size={16} color="var(--color-text-muted)" />
-          <input autoComplete="off"
-            type="text"
-            placeholder="Search by student name or roll..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input-shared"
-          />
-        </div>
+          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredFees.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div style={styles.searchBox} className="filter-bar__search">
+              <Search size={16} color="#64748b" />
+              <input autoComplete="off"
+                type="text"
+                placeholder="Search by student name or roll..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
 
-        <div className="filter-bar__controls">
-          <Select
-            items={[
-              { value: '', label: 'All Statuses' },
-              { value: 'paid', label: 'Paid', color: 'var(--color-success)' },
-              { value: 'unpaid', label: 'Unpaid', color: 'var(--color-danger)' }
-            ]}
-            value={statusFilter}
-            onChange={setStatusFilter}
-            placeholder="Select status"
-          />
+            <div style={styles.filtersGroup} className="filter-bar__controls">
+              <div className="select-wrapper" style={{ width: 'auto' }}>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={styles.filterSelect}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="paid">Paid</option>
+                  <option value="unpaid">Unpaid</option>
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
+              </div>
 
-          {canAdd && (
-            <>
-              <button onClick={handleOpenInvoiceModal} className="btn-secondary">
-                Generate Invoice
-              </button>
-              <button onClick={() => handleOpenPaymentModal(null)} className="btn-primary-action">
-                <PlusCircle size={16} /> Record Payment
-              </button>
-            </>
-          )}
-        </div>
+              {canAdd && (
+                <>
+                  <button onClick={handleOpenInvoiceModal} className="btn-secondary">
+                    Generate Invoice
+                  </button>
+                  <button onClick={() => handleOpenPaymentModal(null)} className="btn-primary">
+                    <PlusCircle size={16} /> Record Payment
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* FEES DATA TABLE */}
@@ -413,59 +417,95 @@ export default function FeesModule({ userRole }) {
               emptyMessage="No matching fee invoices found."
               renderActions={(fee) => (
                 <>
-                  {canAdd && fee.status === 'unpaid' && (
-                    <button
-                      onClick={() => handleOpenPaymentModal(fee)}
-                      className="btn-primary"
-                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                    >
-                      Post Cash
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setActiveFee(fee)}
+                    className="action-btn-icon action-view"
+                    data-tooltip="View Details"
+                    aria-label="View Details"
+                  >
+                    <Eye size={15} />
+                  </button>
                   {fee.total_paid > 0 && (
                     <button
                       onClick={() => handleOpenReceipt(fee)}
-                      className="btn-secondary"
-                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                      title="Print Receipt"
+                      className="action-btn-icon action-view"
+                      data-tooltip="Print Receipt"
+                      aria-label="Print Receipt"
                     >
-                      <Printer size={14} /> Receipt
-                    </button>
-                  )}
-                  {fee.status === 'unpaid' && (
-                    <button
-                      onClick={() => handleMarkPaid(fee.id)}
-                      className="btn-secondary"
-                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#ceead6' }}
-                      title="Mark Paid"
-                    >
-                      <Check size={14} /> Paid
+                      <Printer size={15} />
                     </button>
                   )}
                   {canAdd && (
                     <button
                       onClick={() => handleOpenEditInvoiceModal(fee)}
-                      className="btn-secondary"
-                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                      title="Edit Invoice"
+                      className="action-btn-icon action-edit"
+                      data-tooltip="Edit Invoice"
+                      aria-label="Edit Invoice"
                     >
-                      <Edit3 size={14} />
+                      <Edit3 size={15} />
                     </button>
                   )}
                   {isEditable && (
                     <button
                       onClick={() => handleDeleteInvoice(fee.id)}
-                      className="btn-danger"
-                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                      title="Delete Invoice"
+                      className="action-btn-icon action-delete"
+                      data-tooltip="Delete Invoice"
+                      aria-label="Delete Invoice"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={15} />
                     </button>
                   )}
                 </>
               )}
             />
           )}
+
+          {/* FEE INVOICE DETAIL DRAWER */}
+          <Drawer
+            isOpen={!!activeFee}
+            onClose={() => setActiveFee(null)}
+            title="Fee Invoice & Payment Details"
+            subtitle={activeFee ? `Invoice ID: #${activeFee.id.substring(0, 8)}` : ''}
+          >
+            {activeFee && (
+              <>
+                <div style={styles.profileCard}>
+                  <div style={styles.profileAvatar}>
+                    {activeFee.student_name?.charAt(0) || 'F'}
+                  </div>
+                  <h4 style={styles.profileName}>{activeFee.student_name}</h4>
+                  <Badge label={activeFee.status ? activeFee.status.toUpperCase() : 'PENDING'} type={activeFee.status} />
+                </div>
+
+                <div style={styles.detailsGrid}>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Student Name</span>
+                    <span style={styles.detailVal}>{activeFee.student_name}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Roll Number</span>
+                    <span style={styles.detailVal}>{activeFee.roll_number || '-'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Total Billed Amount</span>
+                    <span style={styles.detailVal}>PKR {Number(activeFee.amount || 0).toLocaleString()}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Total Paid Amount</span>
+                    <span style={styles.detailVal}>PKR {Number(activeFee.total_paid || 0).toLocaleString()}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Due Date</span>
+                    <span style={styles.detailVal}>{activeFee.due_date || '-'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Payment Status</span>
+                    <span style={styles.detailVal}>{activeFee.status || 'unpaid'}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </Drawer>
         </div>
       )}
 

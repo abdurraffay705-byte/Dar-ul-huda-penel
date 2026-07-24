@@ -5,8 +5,6 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import Badge from './Badge';
-import Select from './ui/Select';
-import Drawer from './ui/Drawer';
 
 
 
@@ -262,37 +260,38 @@ export default function StudentsModule({ userRole, user }) {
           <h1 className="section-title">Students Roster</h1>
 
           {/* FILTER ACTION BAR */}
-          <div className={`glass-panel filter-bar ${!loading && filteredStudents.length === 0 ? 'configBarExpanded' : ''}`}>
-            <div className="filter-bar__search">
-              <Search size={18} color="var(--color-text-muted)" />
+          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredStudents.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div style={styles.searchBox} className="filter-bar__search">
               <input autoComplete="off"
                 type="text"
                 placeholder="Search by student name, roll number, father..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="search-input-shared"
+                style={styles.searchInput}
               />
             </div>
 
-            <div className="filter-bar__controls">
-              <Select
-                items={[
-                  { value: '', label: 'All Classes' },
-                  { value: 'Grade 1', label: 'Grade 1' },
-                  { value: 'Grade 2', label: 'Grade 2' },
-                  { value: 'Grade 3', label: 'Grade 3' },
-                  { value: 'Grade 4', label: 'Grade 4' },
-                  { value: 'Grade 5', label: 'Grade 5' },
-                  { value: 'Hifz', label: 'Hifz' },
-                  { value: 'Nazra', label: 'Nazra' }
-                ]}
-                value={classFilter}
-                onChange={setClassFilter}
-                placeholder="Select class"
-              />
+            <div style={styles.filtersGroup} className="filter-bar__controls">
+              <div className="select-wrapper" style={{ width: 'auto' }}>
+                <select
+                  value={classFilter}
+                  onChange={(e) => setClassFilter(e.target.value)}
+                  style={styles.filterSelect}
+                >
+                  <option value="">All Classes</option>
+                  <option value="Grade 1">Grade 1</option>
+                  <option value="Grade 2">Grade 2</option>
+                  <option value="Grade 3">Grade 3</option>
+                  <option value="Grade 4">Grade 4</option>
+                  <option value="Grade 5">Grade 5</option>
+                  <option value="Hifz">Hifz</option>
+                  <option value="Nazra">Nazra</option>
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
+              </div>
 
               {isEditable && (
-                <button onClick={handleOpenCreateForm} className="btn-primary-action">
+                <button onClick={handleOpenCreateForm} className="btn-primary">
                   <UserPlus size={16} /> Admit Student
                 </button>
               )}
@@ -311,7 +310,7 @@ export default function StudentsModule({ userRole, user }) {
           ) : (
             <div style={styles.workspace}>
               {/* ROSTER DATA TABLE */}
-              <div style={{ width: '100%' }}>
+              <div style={{ ...styles.tableArea, width: activeStudent ? '60%' : '100%' }}>
                 <DataTable
                   columns={[
                     {
@@ -356,30 +355,30 @@ export default function StudentsModule({ userRole, user }) {
                     <>
                       <button
                         onClick={() => handleViewDetails(student)}
-                        className="action-btn-icon action-view"
-                        data-tooltip="View Profile"
-                        aria-label="View Profile"
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                        title="View Details"
                       >
-                        <Eye size={15} />
+                        <Eye size={14} /> Profile
                       </button>
                       {canEditStudent(student) && (
                         <button
                           onClick={() => handleOpenEditForm(student)}
-                          className="action-btn-icon action-edit"
-                          data-tooltip="Edit Details"
-                          aria-label="Edit Details"
+                          className="btn-secondary"
+                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                          title="Edit Details"
                         >
-                          <Edit3 size={15} />
+                          <Edit3 size={14} /> Edit
                         </button>
                       )}
                       {canDeleteStudent() && (
                         <button
                           onClick={() => handleDelete(student.id)}
-                          className="action-btn-icon action-delete"
-                          data-tooltip="Delete Student"
-                          aria-label="Delete Student"
+                          className="btn-danger"
+                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                          title="Delete"
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={14} /> Delete
                         </button>
                       )}
                     </>
@@ -387,95 +386,95 @@ export default function StudentsModule({ userRole, user }) {
                 />
               </div>
 
-              {/* DETAILED STUDENT WORKSPACE PROFILE DRAWER */}
-              <Drawer
-                isOpen={!!activeStudent}
-                onClose={() => setActiveStudent(null)}
-                title="Student Profile Details"
-                subtitle={activeStudent ? `Roll #: ${activeStudent.roll_number}` : ''}
-              >
-                {activeStudent && (
-                  <>
-                    <div style={styles.profileCard}>
-                      <div style={styles.profileAvatar}>
-                        {activeStudent.full_name.charAt(0)}
-                      </div>
-                      <h4 style={styles.profileName}>{activeStudent.full_name}</h4>
-                      <Badge label="Active Student" type="success" />
+              {/* DETAILED STUDENT WORKSPACE PROFILE */}
+              {activeStudent && (
+                <div className="glass-panel fade-in" style={styles.profileArea}>
+                  <div style={styles.profileHeader}>
+                    <h3 style={styles.profileTitle}>Student Profile Details</h3>
+                    <button onClick={() => setActiveStudent(null)} style={styles.closeBtn} className="btn-icon-only">
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div style={styles.profileCard}>
+                    <div style={styles.profileAvatar}>
+                      {activeStudent.full_name.charAt(0)}
                     </div>
+                    <h4 style={styles.profileName}>{activeStudent.full_name}</h4>
+                    <Badge label="Active Student" type="success" />
+                  </div>
 
-                    <div style={styles.detailsGrid}>
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Roll Number</span>
-                        <span style={styles.detailVal}>{activeStudent.roll_number}</span>
-                      </div>
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Class Assigned</span>
-                        <span style={styles.detailVal}>{activeStudent.class}</span>
-                      </div>
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Assigned Section</span>
-                        <span style={styles.detailVal}>{activeStudent.section_name ? `${activeStudent.section_name} (${activeStudent.section_program || ''})` : 'Unassigned'}</span>
-                      </div>
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Father's Name</span>
-                        <span style={styles.detailVal}>{activeStudent.father_name}</span>
-                      </div>
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Phone Contact</span>
-                        <span style={styles.detailVal}>{activeStudent.phone || 'Not Specified'}</span>
-                      </div>
+                  <div style={styles.detailsGrid}>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Roll Number</span>
+                      <span style={styles.detailVal}>{activeStudent.roll_number}</span>
                     </div>
-
-                    <hr style={styles.divider} />
-
-                    <div style={styles.parentBox}>
-                      <div style={styles.parentRow}>
-                        <span style={styles.parentLabel}>Address:</span>
-                        <span style={styles.parentVal}>{activeStudent.address || 'Not Specified'}</span>
-                      </div>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Class Assigned</span>
+                      <span style={styles.detailVal}>{activeStudent.class}</span>
                     </div>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Assigned Section</span>
+                      <span style={styles.detailVal}>{activeStudent.section_name ? `${activeStudent.section_name} (${activeStudent.section_program || ''})` : 'Unassigned'}</span>
+                    </div>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Father's Name</span>
+                      <span style={styles.detailVal}>{activeStudent.father_name}</span>
+                    </div>
+                    <div style={styles.detailItem}>
+                      <span style={styles.detailLabel}>Phone Contact</span>
+                      <span style={styles.detailVal}>{activeStudent.phone || 'Not Specified'}</span>
+                    </div>
+                  </div>
 
-                    <hr style={styles.divider} />
+                  <hr style={styles.divider} />
 
-                    {/* AUXILIARY HISTORIES */}
-                    <h4 style={styles.subHeading}>Billing Invoices</h4>
-                    <div style={styles.auxList}>
-                      {studentFees.length === 0 ? (
-                        <p style={styles.auxEmpty}>No fee invoices logged.</p>
-                      ) : (
-                        studentFees.map(f => (
-                          <div key={f.id} style={styles.auxItem}>
+                  <div style={styles.parentBox}>
+                    <div style={styles.parentRow}>
+                      <span style={styles.parentLabel}>Address:</span>
+                      <span style={styles.parentVal}>{activeStudent.address || 'Not Specified'}</span>
+                    </div>
+                  </div>
+
+                  <hr style={styles.divider} />
+
+                  {/* AUXILIARY HISTORIES */}
+                  <h4 style={styles.subHeading}>Billing Invoices</h4>
+                  <div style={styles.auxList}>
+                    {studentFees.length === 0 ? (
+                      <p style={styles.auxEmpty}>No fee invoices logged.</p>
+                    ) : (
+                      studentFees.map(f => (
+                        <div key={f.id} style={styles.auxItem}>
+                          <div>
+                            <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>Due Date: {f.due_date}</span>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-primary)' }}>PKR {Number(f.amount).toLocaleString()}</span>
                             <div>
-                              <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>Due Date: {f.due_date}</span>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-primary)' }}>PKR {Number(f.amount).toLocaleString()}</span>
-                              <div>
-                                <Badge label={f.status} type={f.status} />
-                              </div>
+                              <Badge label={f.status} type={f.status} />
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
 
-                    <h4 style={styles.subHeading}>Recent Attendance Log</h4>
-                    <div style={styles.auxList}>
-                      {studentAttendance.length === 0 ? (
-                        <p style={styles.auxEmpty}>No attendance logged yet.</p>
-                      ) : (
-                        studentAttendance.slice(0, 5).map(a => (
-                          <div key={a.id} style={styles.auxItem}>
-                            <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{a.date}</span>
-                            <Badge label={a.status} type={a.status} />
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </>
-                )}
-              </Drawer>
+                  <h4 style={styles.subHeading}>Recent Attendance Log</h4>
+                  <div style={styles.auxList}>
+                    {studentAttendance.length === 0 ? (
+                      <p style={styles.auxEmpty}>No attendance logged yet.</p>
+                    ) : (
+                      studentAttendance.slice(0, 5).map(a => (
+                        <div key={a.id} style={styles.auxItem}>
+                          <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{a.date}</span>
+                          <Badge label={a.status} type={a.status} />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -755,15 +754,15 @@ const styles = {
     height: '64px',
     borderRadius: '50%',
     backgroundColor: 'var(--color-primary-light)',
-    color: '#ffffff',
+    color: 'white',
     fontSize: '1.5rem',
     fontWeight: '700',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    border: '2px solid var(--color-accent)',
-    margin: '0 auto 0.5rem auto',
-    boxSizing: 'border-box'
+    border: '2px solid var(--color-accent-gold)',
+    marginBottom: '0.5rem',
+    boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
   },
   profileName: {
     fontSize: '1.15rem',

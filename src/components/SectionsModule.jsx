@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { Search, PlusCircle, Edit3, Trash2, X, GraduationCap, User, Layers, Loader2, ChevronDown } from 'lucide-react';
+import { Search, PlusCircle, Edit3, Trash2, X, GraduationCap, User, Layers, Loader2, ChevronDown, Eye } from 'lucide-react';
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
+import Badge from './Badge';
+import Drawer from './ui/Drawer';
 
 export default function SectionsModule({ userRole }) {
   const [sections, setSections] = useState([]);
@@ -12,6 +14,7 @@ export default function SectionsModule({ userRole }) {
   const [search, setSearch] = useState('');
 
   // Modal & Form State
+  const [activeSection, setActiveSection] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -132,19 +135,19 @@ export default function SectionsModule({ userRole }) {
           <h1 className="section-title">Sections Registry</h1>
 
           {/* FILTER & ACTIONS BAR */}
-          <div className={`glass-panel filter-bar ${!loading && filteredSections.length === 0 ? 'configBarExpanded' : ''}`}>
-            <div className="filter-bar__search">
-              <Search size={16} color="var(--color-text-muted)" />
+          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredSections.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div style={styles.searchBox} className="filter-bar__search">
+              <Search size={16} color="#64748b" />
               <input autoComplete="off"
                 type="text"
                 placeholder="Search by section name or program..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="search-input-shared"
+                style={styles.searchInput}
               />
             </div>
 
-            <div className="filter-bar__controls">
+            <div style={styles.filtersGroup} className="filter-bar__controls">
               {isEditable && (
                 <button onClick={handleOpenCreateForm} className="btn-primary">
                   <PlusCircle size={16} /> Create Section
@@ -197,23 +200,31 @@ export default function SectionsModule({ userRole }) {
               emptyMessage="No matching sections found."
               renderActions={(sec) => (
                 <>
+                  <button
+                    onClick={() => setActiveSection(sec)}
+                    className="action-btn-icon action-view"
+                    data-tooltip="View Details"
+                    aria-label="View Details"
+                  >
+                    <Eye size={15} />
+                  </button>
                   {isEditable && (
                     <>
                       <button
                         onClick={() => handleOpenEditForm(sec)}
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Edit Section"
+                        className="action-btn-icon action-edit"
+                        data-tooltip="Edit Section"
+                        aria-label="Edit Section"
                       >
-                        <Edit3 size={14} /> Edit
+                        <Edit3 size={15} />
                       </button>
                       <button
                         onClick={() => handleDelete(sec.id)}
-                        className="btn-danger"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Delete Section"
+                        className="action-btn-icon action-delete"
+                        data-tooltip="Delete Section"
+                        aria-label="Delete Section"
                       >
-                        <Trash2 size={14} /> Delete
+                        <Trash2 size={15} />
                       </button>
                     </>
                   )}
@@ -221,6 +232,45 @@ export default function SectionsModule({ userRole }) {
               )}
             />
           )}
+
+          {/* SECTION REGISTRY DETAIL DRAWER */}
+          <Drawer
+            isOpen={!!activeSection}
+            onClose={() => setActiveSection(null)}
+            title="Section Registry Details"
+            subtitle={activeSection?.program || ''}
+          >
+            {activeSection && (
+              <>
+                <div style={styles.profileCard}>
+                  <div style={styles.profileAvatar}>
+                    {activeSection.name?.charAt(0) || 'S'}
+                  </div>
+                  <h4 style={styles.profileName}>{activeSection.name}</h4>
+                  <Badge label={activeSection.program || 'GENERAL'} type="info" />
+                </div>
+
+                <div style={styles.detailsGrid}>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Section Name</span>
+                    <span style={styles.detailVal}>{activeSection.name}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Educational Program</span>
+                    <span style={styles.detailVal}>{activeSection.program || 'Not Specified'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Assigned Instructor</span>
+                    <span style={styles.detailVal}>{activeSection.teacher_name || 'Unassigned'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Enrolled Students</span>
+                    <span style={styles.detailVal}>{activeSection.students?.length || 0} Students</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </Drawer>
         </div>
       )}
 

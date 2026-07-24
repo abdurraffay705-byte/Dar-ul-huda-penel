@@ -35,6 +35,7 @@ export default function App() {
     '/fees': ['admin', 'data_entry'],
     '/donations': ['admin', 'data_entry'],
     '/cms': ['admin', 'data_entry', 'student'],
+    '/settings': ['admin'],
     '/sections': ['admin', 'data_entry'],
     '/my-section': ['teacher'],
     '/student-attendance': ['student'],
@@ -161,6 +162,7 @@ export default function App() {
           { path: '/my-section', element: <MySectionModule user={user} /> },
           { path: '/student-attendance', element: <StudentAttendanceModule user={user} /> },
           { path: '/student-fees', element: <StudentFeesModule user={user} /> },
+          { path: '/settings', element: <SettingsModule /> },
         ].map(({ path, element }) => (
           <Route
             key={path}

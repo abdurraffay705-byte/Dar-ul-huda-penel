@@ -93,8 +93,8 @@ export default function CoursesModule({ userRole }) {
     }
   };
 
-  const filteredCourses = courses.filter(c => 
-    c.title.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredCourses = courses.filter(c =>
+    c.title.toLowerCase().includes(search.toLowerCase()) ||
     (c.description && c.description.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -104,65 +104,65 @@ export default function CoursesModule({ userRole }) {
     <>
       {!isFormOpen && (
         <div className="fade-in">
-      <h1 className="section-title">Courses Registry</h1>
+          <h1 className="section-title">Courses Registry</h1>
 
-      {/* FILTER & ACTIONS BAR */}
-      <div className="glass-panel filter-bar">
-        <div className="filter-bar__search">
-          <BookOpen size={16} color="var(--color-text-muted)" />
-          <input autoComplete="off"
-            type="text"
-            placeholder="Search by course title or details..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input-shared"
-          />
-        </div>
-
-        {isEditable && (
-          <button onClick={handleOpenCreateForm} className="btn-primary">
-            <PlusCircle size={16} /> Add Course
-          </button>
-        )}
-      </div>
-
-      {/* COURSES CARD GRID */}
-      {loading ? (
-        <LoadingSpinner message="Loading courses curriculum..." />
-      ) : filteredCourses.length === 0 ? (
-        <div style={styles.noData}>No courses registered in curriculum registry.</div>
-      ) : (
-        <div style={styles.courseGrid}>
-          {filteredCourses.map((course) => (
-            <div key={course.id} className="glass-panel" style={styles.courseCard}>
-              <div style={styles.cardHeader}>
-                <BookOpen size={22} color="var(--color-accent)" />
-                <h3 style={styles.courseTitle}>{course.title}</h3>
-              </div>
-
-              <p style={styles.courseDesc}>{course.description || 'No description provided for this course.'}</p>
-              
-              <div style={styles.instructorBox}>
-                <GraduationCap size={16} color="var(--color-primary-light)" />
-                <span style={styles.instructorLabel}>Instructor:</span>
-                <strong style={styles.instructorVal}>{course.teacher_name}</strong>
-              </div>
-
-              {isEditable && (
-                <div style={styles.cardActions}>
-                  <button onClick={() => handleOpenEditForm(course)} className="btn-secondary" style={styles.editBtn}>
-                    <Edit3 size={14} /> Edit Course
-                  </button>
-                  <button onClick={() => handleDelete(course.id)} style={styles.deleteBtn}>
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </div>
-              )}
+          {/* FILTER & ACTIONS BAR */}
+          <div style={styles.filterBar} className="glass-panel">
+            <div style={styles.searchBox}>
+              <BookOpen size={16} color="#64748b" />
+              <input autoComplete="off"
+                type="text"
+                placeholder="Search by course title or details..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={styles.searchInput}
+              />
             </div>
-          ))}
+
+            {isEditable && (
+              <button onClick={handleOpenCreateForm} className="btn-primary">
+                <PlusCircle size={16} /> Add Course
+              </button>
+            )}
+          </div>
+
+          {/* COURSES CARD GRID */}
+          {loading ? (
+            <LoadingSpinner message="Loading courses curriculum..." />
+          ) : filteredCourses.length === 0 ? (
+            <div style={styles.noData}>No courses registered in curriculum registry.</div>
+          ) : (
+            <div style={styles.courseGrid}>
+              {filteredCourses.map((course) => (
+                <div key={course.id} className="glass-panel" style={styles.courseCard}>
+                  <div style={styles.cardHeader}>
+                    <BookOpen size={22} color="var(--color-accent)" />
+                    <h3 style={styles.courseTitle}>{course.title}</h3>
+                  </div>
+
+                  <p style={styles.courseDesc}>{course.description || 'No description provided for this course.'}</p>
+
+                  <div style={styles.instructorBox}>
+                    <GraduationCap size={16} color="var(--color-primary-light)" />
+                    <span style={styles.instructorLabel}>Instructor:</span>
+                    <strong style={styles.instructorVal}>{course.teacher_name}</strong>
+                  </div>
+
+                  {isEditable && (
+                    <div style={styles.cardActions}>
+                      <button onClick={() => handleOpenEditForm(course)} className="btn-secondary" style={styles.editBtn}>
+                        <Edit3 size={14} /> Edit Course
+                      </button>
+                      <button onClick={() => handleDelete(course.id)} style={styles.deleteBtn}>
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-      </div>
       )}
 
       {/* ADD / EDIT COURSE MODAL */}

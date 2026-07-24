@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { database } from '../supabaseClient';
-import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X, Trash2, Edit3, ChevronDown, Loader2 } from 'lucide-react';
+import { HeartHandshake, PlusCircle, Search, DollarSign, Calendar, Target, ShieldCheck, X, Trash2, Edit3, ChevronDown, Loader2, Eye } from 'lucide-react';
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
+import Badge from './Badge';
 import Select from './ui/Select';
+import Drawer from './ui/Drawer';
 
 
 export default function DonationsModule({ userRole }) {
@@ -14,6 +16,7 @@ export default function DonationsModule({ userRole }) {
   const [sourceFilter, setSourceFilter] = useState('');
 
   // Modals & Forms
+  const [activeDonation, setActiveDonation] = useState(null);
   const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [editingDonation, setEditingDonation] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -204,30 +207,32 @@ export default function DonationsModule({ userRole }) {
           <h3 style={styles.subHeading}><DollarSign size={16} style={{ marginRight: 6 }} /> Donor Transaction Registry</h3>
 
           {/* SEARCH AND FILTERS */}
-          <div className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
-            <div className="filter-bar__search">
-              <Search size={16} color="var(--color-text-muted)" />
+          <div style={styles.filterBar} className={`glass-panel filter-bar ${!loading && filteredDonations.length === 0 ? 'configBarExpanded' : ''}`}>
+            <div style={styles.searchBox} className="filter-bar__search">
+              <Search size={16} color="#64748b" />
               <input autoComplete="off"
                 type="text"
                 placeholder="Search by donor name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="search-input-shared"
+                style={styles.searchInput}
               />
             </div>
 
-            <div className="filter-bar__controls">
-              <Select
-                items={[
-                  { value: '', label: 'All Sources' },
-                  { value: 'General Sadqah Fund', label: 'General Sadqah Fund' },
-                  { value: 'Orphan Sponsorship', label: 'Orphan Sponsorship' },
-                  { value: 'Mosque Hall Extension', label: 'Mosque Hall Extension' }
-                ]}
-                value={sourceFilter}
-                onChange={setSourceFilter}
-                placeholder="Select source"
-              />
+            <div style={styles.filtersGroup} className="filter-bar__controls">
+              <div className="select-wrapper" style={{ width: 'auto' }}>
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  style={styles.filterSelect}
+                >
+                  <option value="">All Sources</option>
+                  <option value="General Sadqah Fund">General Sadqah Fund</option>
+                  <option value="Orphan Sponsorship">Orphan Sponsorship</option>
+                  <option value="Mosque Hall Extension">Mosque Hall Extension</option>
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
+              </div>
             </div>
           </div>
 
@@ -275,23 +280,31 @@ export default function DonationsModule({ userRole }) {
               emptyMessage="No matching donation transactions found."
               renderActions={(donation) => (
                 <>
+                  <button
+                    onClick={() => setActiveDonation(donation)}
+                    className="action-btn-icon action-view"
+                    data-tooltip="View Details"
+                    aria-label="View Details"
+                  >
+                    <Eye size={15} />
+                  </button>
                   {isEditable && (
                     <>
                       <button
                         onClick={() => handleOpenEditForm(donation)}
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Edit Details"
+                        className="action-btn-icon action-edit"
+                        data-tooltip="Edit Donation"
+                        aria-label="Edit Donation"
                       >
-                        <Edit3 size={14} /> Edit
+                        <Edit3 size={15} />
                       </button>
                       <button
                         onClick={() => handleDelete(donation.id)}
-                        className="btn-danger"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Delete"
+                        className="action-btn-icon action-delete"
+                        data-tooltip="Delete Donation"
+                        aria-label="Delete Donation"
                       >
-                        <Trash2 size={14} /> Delete
+                        <Trash2 size={15} />
                       </button>
                     </>
                   )}
@@ -299,6 +312,53 @@ export default function DonationsModule({ userRole }) {
               )}
             />
           )}
+
+          {/* DONATION TRANSACTION DETAIL DRAWER */}
+          <Drawer
+            isOpen={!!activeDonation}
+            onClose={() => setActiveDonation(null)}
+            title="Donation Transaction Details"
+            subtitle={activeDonation?.source || ''}
+          >
+            {activeDonation && (
+              <>
+                <div style={styles.profileCard}>
+                  <div style={styles.profileAvatar}>
+                    {activeDonation.donor_name?.charAt(0) || 'D'}
+                  </div>
+                  <h4 style={styles.profileName}>{activeDonation.donor_name}</h4>
+                  <Badge label={activeDonation.payment_mode ? activeDonation.payment_mode.toUpperCase() : 'DONATION'} type="info" />
+                </div>
+
+                <div style={styles.detailsGrid}>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Donor Name</span>
+                    <span style={styles.detailVal}>{activeDonation.donor_name}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Donation Amount</span>
+                    <span style={styles.detailVal}>PKR {Number(activeDonation.amount || 0).toLocaleString()}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Fund Category / Source</span>
+                    <span style={styles.detailVal}>{activeDonation.source || 'General Sadqah Fund'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Payment Mode</span>
+                    <span style={styles.detailVal}>{activeDonation.payment_mode || 'Cash'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Receipt Date</span>
+                    <span style={styles.detailVal}>{activeDonation.created_at ? activeDonation.created_at.substring(0, 10) : '-'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Notes / Reference</span>
+                    <span style={styles.detailVal}>{activeDonation.notes || 'No additional remarks'}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </Drawer>
         </div>
       )}
 

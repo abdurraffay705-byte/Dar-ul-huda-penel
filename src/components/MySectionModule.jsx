@@ -115,14 +115,14 @@ export default function MySectionModule({ user }) {
           <div className="glass-panel" style={styles.studentsListCard}>
             <div style={styles.cardHeader}>
               <h3 style={styles.cardTitle}><GraduationCap size={18} style={{ verticalAlign: 'middle', marginRight: 6 }} /> My Students Roster</h3>
-              <div className="filter-bar__search" style={{ maxWidth: '280px' }}>
-                <Search size={16} color="var(--color-text-muted)" />
+              <div style={styles.searchBox}>
+                <Search size={14} color="#64748b" />
                 <input autoComplete="off"
                   type="text"
                   placeholder="Search students..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="search-input-shared"
+                  style={styles.searchInput}
                 />
               </div>
             </div>
