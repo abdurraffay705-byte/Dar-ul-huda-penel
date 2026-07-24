@@ -5,6 +5,8 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import Badge from './Badge';
+import Select from './ui/Select';
+import Drawer from './ui/Drawer';
 
 export default function TeachersModule({ userRole }) {
   const [teachers, setTeachers] = useState([]);
