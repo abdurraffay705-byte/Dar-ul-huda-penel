@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import './Drawer.css';
 
 /**
- * Reusable slide-out Drawer component
+ * Reusable slide-out Drawer component using React createPortal
  *
  * Props:
  * - isOpen: boolean (controls visibility)
@@ -46,9 +47,9 @@ export default function Drawer({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="drawer-portal">
-      {/* Dimmed & Blurred Backdrop Overlay */}
+      {/* Dimmed & Blurred Backdrop Overlay covering full viewport including sidebar */}
       <div className="drawer-backdrop" onClick={onClose} />
 
       {/* Slide-out Panel */}
@@ -76,6 +77,7 @@ export default function Drawer({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

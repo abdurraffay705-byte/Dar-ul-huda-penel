@@ -755,15 +755,15 @@ const styles = {
     height: '64px',
     borderRadius: '50%',
     backgroundColor: 'var(--color-primary-light)',
-    color: 'white',
+    color: '#ffffff',
     fontSize: '1.5rem',
     fontWeight: '700',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    border: '2px solid var(--color-accent-gold)',
-    marginBottom: '0.5rem',
-    boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+    border: '2px solid var(--color-accent)',
+    margin: '0 auto 0.5rem auto',
+    boxSizing: 'border-box'
   },
   profileName: {
     fontSize: '1.15rem',
