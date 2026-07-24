@@ -6,6 +6,7 @@ import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import Badge from './Badge';
 import Select from './ui/Select';
+import Drawer from './ui/Drawer';
 
 
 
@@ -310,7 +311,7 @@ export default function StudentsModule({ userRole, user }) {
           ) : (
             <div style={styles.workspace}>
               {/* ROSTER DATA TABLE */}
-              <div style={{ ...styles.tableArea, width: activeStudent ? '60%' : '100%' }}>
+              <div style={{ width: '100%' }}>
                 <DataTable
                   columns={[
                     {
@@ -355,30 +356,30 @@ export default function StudentsModule({ userRole, user }) {
                     <>
                       <button
                         onClick={() => handleViewDetails(student)}
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="View Details"
+                        className="action-btn-icon action-view"
+                        data-tooltip="View Profile"
+                        aria-label="View Profile"
                       >
-                        <Eye size={14} /> Profile
+                        <Eye size={15} />
                       </button>
                       {canEditStudent(student) && (
                         <button
                           onClick={() => handleOpenEditForm(student)}
-                          className="btn-secondary"
-                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                          title="Edit Details"
+                          className="action-btn-icon action-edit"
+                          data-tooltip="Edit Details"
+                          aria-label="Edit Details"
                         >
-                          <Edit3 size={14} /> Edit
+                          <Edit3 size={15} />
                         </button>
                       )}
                       {canDeleteStudent() && (
                         <button
                           onClick={() => handleDelete(student.id)}
-                          className="btn-danger"
-                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                          title="Delete"
+                          className="action-btn-icon action-delete"
+                          data-tooltip="Delete Student"
+                          aria-label="Delete Student"
                         >
-                          <Trash2 size={14} /> Delete
+                          <Trash2 size={15} />
                         </button>
                       )}
                     </>
@@ -386,95 +387,95 @@ export default function StudentsModule({ userRole, user }) {
                 />
               </div>
 
-              {/* DETAILED STUDENT WORKSPACE PROFILE */}
-              {activeStudent && (
-                <div className="glass-panel fade-in" style={styles.profileArea}>
-                  <div style={styles.profileHeader}>
-                    <h3 style={styles.profileTitle}>Student Profile Details</h3>
-                    <button onClick={() => setActiveStudent(null)} style={styles.closeBtn} className="btn-icon-only">
-                      <X size={18} />
-                    </button>
-                  </div>
+              {/* DETAILED STUDENT WORKSPACE PROFILE DRAWER */}
+              <Drawer
+                isOpen={!!activeStudent}
+                onClose={() => setActiveStudent(null)}
+                title="Student Profile Details"
+                subtitle={activeStudent ? `Roll #: ${activeStudent.roll_number}` : ''}
+              >
+                {activeStudent && (
+                  <>
+                    <div style={styles.profileCard}>
+                      <div style={styles.profileAvatar}>
+                        {activeStudent.full_name.charAt(0)}
+                      </div>
+                      <h4 style={styles.profileName}>{activeStudent.full_name}</h4>
+                      <Badge label="Active Student" type="success" />
+                    </div>
 
-                  <div style={styles.profileCard}>
-                    <div style={styles.profileAvatar}>
-                      {activeStudent.full_name.charAt(0)}
+                    <div style={styles.detailsGrid}>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Roll Number</span>
+                        <span style={styles.detailVal}>{activeStudent.roll_number}</span>
+                      </div>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Class Assigned</span>
+                        <span style={styles.detailVal}>{activeStudent.class}</span>
+                      </div>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Assigned Section</span>
+                        <span style={styles.detailVal}>{activeStudent.section_name ? `${activeStudent.section_name} (${activeStudent.section_program || ''})` : 'Unassigned'}</span>
+                      </div>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Father's Name</span>
+                        <span style={styles.detailVal}>{activeStudent.father_name}</span>
+                      </div>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Phone Contact</span>
+                        <span style={styles.detailVal}>{activeStudent.phone || 'Not Specified'}</span>
+                      </div>
                     </div>
-                    <h4 style={styles.profileName}>{activeStudent.full_name}</h4>
-                    <Badge label="Active Student" type="success" />
-                  </div>
 
-                  <div style={styles.detailsGrid}>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Roll Number</span>
-                      <span style={styles.detailVal}>{activeStudent.roll_number}</span>
-                    </div>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Class Assigned</span>
-                      <span style={styles.detailVal}>{activeStudent.class}</span>
-                    </div>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Assigned Section</span>
-                      <span style={styles.detailVal}>{activeStudent.section_name ? `${activeStudent.section_name} (${activeStudent.section_program || ''})` : 'Unassigned'}</span>
-                    </div>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Father's Name</span>
-                      <span style={styles.detailVal}>{activeStudent.father_name}</span>
-                    </div>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Phone Contact</span>
-                      <span style={styles.detailVal}>{activeStudent.phone || 'Not Specified'}</span>
-                    </div>
-                  </div>
+                    <hr style={styles.divider} />
 
-                  <hr style={styles.divider} />
-
-                  <div style={styles.parentBox}>
-                    <div style={styles.parentRow}>
-                      <span style={styles.parentLabel}>Address:</span>
-                      <span style={styles.parentVal}>{activeStudent.address || 'Not Specified'}</span>
+                    <div style={styles.parentBox}>
+                      <div style={styles.parentRow}>
+                        <span style={styles.parentLabel}>Address:</span>
+                        <span style={styles.parentVal}>{activeStudent.address || 'Not Specified'}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <hr style={styles.divider} />
+                    <hr style={styles.divider} />
 
-                  {/* AUXILIARY HISTORIES */}
-                  <h4 style={styles.subHeading}>Billing Invoices</h4>
-                  <div style={styles.auxList}>
-                    {studentFees.length === 0 ? (
-                      <p style={styles.auxEmpty}>No fee invoices logged.</p>
-                    ) : (
-                      studentFees.map(f => (
-                        <div key={f.id} style={styles.auxItem}>
-                          <div>
-                            <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>Due Date: {f.due_date}</span>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-primary)' }}>PKR {Number(f.amount).toLocaleString()}</span>
+                    {/* AUXILIARY HISTORIES */}
+                    <h4 style={styles.subHeading}>Billing Invoices</h4>
+                    <div style={styles.auxList}>
+                      {studentFees.length === 0 ? (
+                        <p style={styles.auxEmpty}>No fee invoices logged.</p>
+                      ) : (
+                        studentFees.map(f => (
+                          <div key={f.id} style={styles.auxItem}>
                             <div>
-                              <Badge label={f.status} type={f.status} />
+                              <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>Due Date: {f.due_date}</span>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-primary)' }}>PKR {Number(f.amount).toLocaleString()}</span>
+                              <div>
+                                <Badge label={f.status} type={f.status} />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                        ))
+                      )}
+                    </div>
 
-                  <h4 style={styles.subHeading}>Recent Attendance Log</h4>
-                  <div style={styles.auxList}>
-                    {studentAttendance.length === 0 ? (
-                      <p style={styles.auxEmpty}>No attendance logged yet.</p>
-                    ) : (
-                      studentAttendance.slice(0, 5).map(a => (
-                        <div key={a.id} style={styles.auxItem}>
-                          <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{a.date}</span>
-                          <Badge label={a.status} type={a.status} />
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
+                    <h4 style={styles.subHeading}>Recent Attendance Log</h4>
+                    <div style={styles.auxList}>
+                      {studentAttendance.length === 0 ? (
+                        <p style={styles.auxEmpty}>No attendance logged yet.</p>
+                      ) : (
+                        studentAttendance.slice(0, 5).map(a => (
+                          <div key={a.id} style={styles.auxItem}>
+                            <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{a.date}</span>
+                            <Badge label={a.status} type={a.status} />
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </Drawer>
             </div>
           )}
         </div>

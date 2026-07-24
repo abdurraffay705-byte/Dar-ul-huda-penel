@@ -5,6 +5,7 @@ import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import Select from './ui/Select';
 import LoadingSpinner from './LoadingSpinner';
+import Drawer from './ui/Drawer';
 
 
 export default function UsersModule({ userRole }) {
@@ -15,6 +16,7 @@ export default function UsersModule({ userRole }) {
   const [roleFilter, setRoleFilter] = useState('');
 
   // Modal & Form State
+  const [activeUser, setActiveUser] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -277,23 +279,31 @@ export default function UsersModule({ userRole }) {
               emptyMessage="No matching users found."
               renderActions={(u) => (
                 <>
+                  <button
+                    onClick={() => setActiveUser(u)}
+                    className="action-btn-icon action-view"
+                    data-tooltip="View Details"
+                    aria-label="View Details"
+                  >
+                    <Eye size={15} />
+                  </button>
                   {isEditable && (
                     <>
                       <button
                         onClick={() => handleOpenEditForm(u)}
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Edit Details"
+                        className="action-btn-icon action-edit"
+                        data-tooltip="Edit Details"
+                        aria-label="Edit Details"
                       >
-                        <Edit3 size={14} /> Edit
+                        <Edit3 size={15} />
                       </button>
                       <button
                         onClick={() => handleDelete(u.id)}
-                        className="btn-danger"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                        title="Remove"
+                        className="action-btn-icon action-delete"
+                        data-tooltip="Remove User"
+                        aria-label="Remove User"
                       >
-                        <Trash2 size={14} /> Remove
+                        <Trash2 size={15} />
                       </button>
                     </>
                   )}
@@ -301,6 +311,49 @@ export default function UsersModule({ userRole }) {
               )}
             />
           )}
+
+          {/* USER DETAIL PROFILE DRAWER */}
+          <Drawer
+            isOpen={!!activeUser}
+            onClose={() => setActiveUser(null)}
+            title="System User Details"
+            subtitle={activeUser?.email || ''}
+          >
+            {activeUser && (
+              <>
+                <div style={styles.profileCard}>
+                  <div style={styles.profileAvatar}>
+                    {activeUser.full_name?.charAt(0) || activeUser.email?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <h4 style={styles.profileName}>{activeUser.full_name || 'System Account'}</h4>
+                  <Badge label={activeUser.role ? activeUser.role.toUpperCase() : 'USER'} type="user" />
+                </div>
+
+                <div style={styles.detailsGrid}>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Full Name</span>
+                    <span style={styles.detailVal}>{activeUser.full_name || '-'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Email Address</span>
+                    <span style={styles.detailVal}>{activeUser.email || '-'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Assigned System Role</span>
+                    <span style={styles.detailVal}>{activeUser.role || '-'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Phone Contact</span>
+                    <span style={styles.detailVal}>{activeUser.phone || 'Not Specified'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Account Created</span>
+                    <span style={styles.detailVal}>{activeUser.created_at ? new Date(activeUser.created_at).toLocaleDateString() : '-'}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </Drawer>
         </div>
       )}
 

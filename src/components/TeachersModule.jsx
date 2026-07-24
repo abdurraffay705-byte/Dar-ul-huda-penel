@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { database, supabase, uploadPhoto } from '../supabaseClient';
-import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Edit3, Trash2, X, Phone, Award, DollarSign, ChevronDown, Loader2, Eye } from 'lucide-react';
 import EmptyState from './EmptyState';
 import DataTable from './DataTable';
 import LoadingSpinner from './LoadingSpinner';
 import Badge from './Badge';
 import Select from './ui/Select';
+import Drawer from './ui/Drawer';
 
 export default function TeachersModule({ userRole }) {
   const [teachers, setTeachers] = useState([]);
@@ -14,6 +15,7 @@ export default function TeachersModule({ userRole }) {
   const [subjectFilter, setSubjectFilter] = useState('');
 
   // Modal & Form State
+  const [activeTeacher, setActiveTeacher] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -287,30 +289,85 @@ export default function TeachersModule({ userRole }) {
               emptyMessage="No matching instructors found."
               renderActions={(teacher) => (
                 <>
+                  <button
+                    onClick={() => setActiveTeacher(teacher)}
+                    className="action-btn-icon action-view"
+                    data-tooltip="View Profile"
+                    aria-label="View Profile"
+                  >
+                    <Eye size={15} />
+                  </button>
                   {(isEditable || norm === 'data_entry') && (
                     <button
                       onClick={() => handleOpenEditForm(teacher)}
-                      className="btn-secondary"
-                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                      title="Edit Details"
+                      className="action-btn-icon action-edit"
+                      data-tooltip="Edit Details"
+                      aria-label="Edit Details"
                     >
-                      <Edit3 size={14} /> Edit
+                      <Edit3 size={15} />
                     </button>
                   )}
                   {isEditable && (
                     <button
                       onClick={() => handleDelete(teacher.id)}
-                      className="btn-danger"
-                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
-                      title="Delete"
+                      className="action-btn-icon action-delete"
+                      data-tooltip="Delete Instructor"
+                      aria-label="Delete Instructor"
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={15} />
                     </button>
                   )}
                 </>
               )}
             />
           )}
+
+          {/* INSTRUCTOR DETAIL PROFILE DRAWER */}
+          <Drawer
+            isOpen={!!activeTeacher}
+            onClose={() => setActiveTeacher(null)}
+            title="Instructor Profile Details"
+            subtitle={activeTeacher?.subject || ''}
+          >
+            {activeTeacher && (
+              <>
+                <div style={styles.profileCard}>
+                  <div style={styles.profileAvatar}>
+                    {activeTeacher.full_name?.charAt(0) || 'I'}
+                  </div>
+                  <h4 style={styles.profileName}>{activeTeacher.full_name}</h4>
+                  <Badge label={activeTeacher.subject || 'Instructor'} type="info" />
+                </div>
+
+                <div style={styles.detailsGrid}>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Assigned Subject</span>
+                    <span style={styles.detailVal}>{activeTeacher.subject}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Qualification</span>
+                    <span style={styles.detailVal}>{activeTeacher.qualification || 'Not Specified'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Phone Contact</span>
+                    <span style={styles.detailVal}>{activeTeacher.phone || 'Not Specified'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Email Address</span>
+                    <span style={styles.detailVal}>{activeTeacher.email || 'Not Specified'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Monthly Salary</span>
+                    <span style={styles.detailVal}>{activeTeacher.salary ? `PKR ${Number(activeTeacher.salary).toLocaleString()}` : 'Unspecified'}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>Joining Date</span>
+                    <span style={styles.detailVal}>{activeTeacher.joining_date || '-'}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </Drawer>
         </div>
       )}
 
